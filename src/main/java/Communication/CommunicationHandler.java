@@ -1,3 +1,5 @@
+package Communication;
+
 import com.rabbitmq.client.*;
 
 import java.io.IOException;

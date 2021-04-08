@@ -1,0 +1,12 @@
+language: java
+before_install:
+  - mvn validate
+
+jobs:
+  include:
+    - stage: "Compile"
+      name: "Compile Project"
+      script: mvn clean && mvn compile && mvn test-compile
+    - stage: "Tests"
+      name: "Unit Tests"
+      script: mvn test
