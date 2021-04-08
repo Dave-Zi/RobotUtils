@@ -53,7 +53,6 @@ public class RobotSensorsData {
                     }
                 }
             } else { // If board type doesn't exist in portMap.
-
                 portsMap.put(board.getKey(), board.getValue()); // Add board type with all its data to map
             }
         }
