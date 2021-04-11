@@ -114,16 +114,26 @@ public class RobotSensorsData {
         return data;
     }
 
-    private Map<String, Map<String, Double>> getBoardsByName(String name){
+    public Map<String, Map<String, Double>> getBoardsByName(String name){
         return portsMap.get(name);
     }
 
-    private Map<String, Double> getPorts(String boardName, String index){
+    public Set<String> getBoardNames (){ return portsMap.keySet(); }
+
+    public Map<String, Double> getBoardByNameAndIndex(String name, String index){ return portsMap.get(name).get(index); }
+
+    public Set<String> getBoardIndexes (String name){ return portsMap.get(name).keySet(); }
+
+    public Map<String, Double> getPortsAndValues(String boardName, String index){
         return getBoardsByName(boardName).get(index);
     }
 
+    public Set<String> getPorts(String boardName, String boardIndex){
+        return portsMap.get(boardName).get(boardIndex).keySet();
+    }
+
     private void setPortValue(String boardName, String boardIndex, String portName, Double newValue) {
-        Map<String, Double> ports = getPorts(boardName, boardIndex);
+        Map<String, Double> ports = getPortsAndValues(boardName, boardIndex);
         ports.replace(portName, newValue);
     }
 
