@@ -132,6 +132,8 @@ public class RobotSensorsData {
         return portsMap.get(boardName).get(boardIndex).keySet();
     }
 
+    public void clear(){portsMap.clear();}
+
     private void setPortValue(String boardName, String boardIndex, String portName, Double newValue) {
         Map<String, Double> ports = getPortsAndValues(boardName, boardIndex);
         ports.replace(portName, newValue);
