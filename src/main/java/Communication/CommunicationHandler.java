@@ -25,7 +25,7 @@ public class CommunicationHandler {
         receiveChannel = connection.createChannel();
         receiveChannel.queueDeclare(receiveQueueName, false, false, false, null);
 
-        receiveChannel.basicConsume(receiveQueueName, true, this::onReceiveCallback, consumerTag -> { });
+        receiveChannel.basicConsume(receiveQueueName, true, myCallback, consumerTag -> { });
     }
 
     public void closeQueues() throws IOException, TimeoutException {
