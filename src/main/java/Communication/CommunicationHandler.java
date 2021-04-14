@@ -51,11 +51,11 @@ public class CommunicationHandler {
         }
 
         Channel channel = connection.createChannel();
+        channel.queueDeclare(queueName, false, false, false, null);
 
         if (purge){
             channel.queuePurge(queueName);
         }
-        channel.queueDeclare(queueName, false, false, false, null);
         return channel;
     }
 
@@ -147,5 +147,11 @@ public class CommunicationHandler {
 
     public void setMyCallback(DeliverCallback myCallback) {
         this.myCallback = myCallback;
+    }
+
+    public void setCredentials(String host, String username, String password){
+        factory.setHost(host);
+        factory.setUsername(username);
+        factory.setPassword(password);
     }
 }
