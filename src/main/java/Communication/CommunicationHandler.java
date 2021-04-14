@@ -23,8 +23,7 @@ public class CommunicationHandler {
      * @throws TimeoutException on no response from RabbitMQ server
      */
     public void openSendQueue(boolean purge) throws IOException, TimeoutException {
-        setUpQueueOpening(sendChannel, sendQueueName, purge);
-        sendChannel.queueDeclare(sendQueueName, false, false, false, null);
+        sendChannel = setUpQueueOpening(sendQueueName, purge);
     }
     /**
      * Open Queue for receiving messages
@@ -33,31 +32,31 @@ public class CommunicationHandler {
      * @throws TimeoutException on no response from RabbitMQ server
      */
     public void openReceiveQueue(boolean purge) throws IOException, TimeoutException {
-        setUpQueueOpening(receiveChannel, receiveQueueName, purge);
-        receiveChannel.queueDeclare(receiveQueueName, false, false, false, null);
+        receiveChannel = setUpQueueOpening(receiveQueueName, purge);
         receiveChannel.basicConsume(receiveQueueName, true, myCallback, consumerTag -> { });
     }
     /**
      * Initiate new connection if necessary.
      * Close channel if it was already open, and create new one.
      * Purge queue if requested
+     * @param queueName name of new queue
      * @param purge existing messages on queue
+     * @return the channel with its opened queue
      * @throws IOException on connection error
      * @throws TimeoutException on no response from RabbitMQ server
      */
-    private void setUpQueueOpening(Channel channel, String queueName, boolean purge) throws IOException, TimeoutException {
+    private Channel setUpQueueOpening(String queueName, boolean purge) throws IOException, TimeoutException {
         if (connection == null){
             connection = factory.newConnection();
         }
 
-        if (channel != null){
-            channel.close();
-        }
-        channel = connection.createChannel();
+        Channel channel = connection.createChannel();
 
         if (purge){
             channel.queuePurge(queueName);
         }
+        channel.queueDeclare(queueName, false, false, false, null);
+        return channel;
     }
 
     /**
