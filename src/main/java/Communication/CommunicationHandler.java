@@ -4,6 +4,7 @@ import com.rabbitmq.client.*;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 public class CommunicationHandler {
@@ -51,7 +52,9 @@ public class CommunicationHandler {
         }
 
         Channel channel = connection.createChannel();
-        channel.queueDeclare(queueName, false, false, false, null);
+        Map<String, Object> args = Map.of("x-max-length", 5);
+
+        channel.queueDeclare(queueName, false, false, false, args);
 
         if (purge){
             channel.queuePurge(queueName);
