@@ -52,8 +52,8 @@ public class CommunicationHandler {
         }
 
         Channel channel = connection.createChannel();
+        channel.basicQos(1);
         Map<String, Object> args = Map.of("x-max-length", 5);
-
         channel.queueDeclare(queueName, false, false, false, args);
 
         if (purge){
