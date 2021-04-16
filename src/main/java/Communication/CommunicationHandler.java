@@ -15,7 +15,9 @@ public class CommunicationHandler {
     private String receiveQueueName = "Data";
     private ConnectionFactory factory = new ConnectionFactory();
     private Connection connection;
-    private DeliverCallback myCallback = this::onReceiveCallback;
+    private DeliverCallback myCallback = this::defaultCallback;
+
+    private int messageId = 0;
 
     /**
      * Open Queue for sending messages
@@ -34,7 +36,7 @@ public class CommunicationHandler {
      */
     public void openReceiveQueue(boolean purge) throws IOException, TimeoutException {
         receiveChannel = setUpQueueOpening(receiveQueueName, purge);
-        receiveChannel.basicConsume(receiveQueueName, true, myCallback, consumerTag -> { });
+        receiveChannel.basicConsume(receiveQueueName, false, this::onReceiveCallback, consumerTag -> { });
     }
     /**
      * Initiate new connection if necessary.
@@ -53,12 +55,13 @@ public class CommunicationHandler {
 
         Channel channel = connection.createChannel();
         channel.basicQos(1);
-        Map<String, Object> args = Map.of("x-max-length", 5, "x-message-ttl", 1000);
+        Map<String, Object> args = Map.of("x-max-length", 5);
         channel.queueDeclare(queueName, false, false, false, args);
 
         if (purge){
             channel.queuePurge(queueName);
         }
+
         return channel;
     }
 
@@ -97,7 +100,11 @@ public class CommunicationHandler {
      * @throws IOException on connection error
      */
     public void send(String message) throws IOException {
-        sendChannel.basicPublish("", sendQueueName, null, message.getBytes());
+        sendChannel.basicPublish("", sendQueueName, new AMQP.BasicProperties.Builder()
+                .messageId(String.valueOf(messageId))
+                .build(),
+                message.getBytes());
+        messageId++;
     }
 
     /**
@@ -106,6 +113,19 @@ public class CommunicationHandler {
      * @param delivery object containing message and data
      */
     private void onReceiveCallback(String consumerTag, Delivery delivery){
+        try {
+            myCallback.handle(consumerTag, delivery);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            receiveChannel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void defaultCallback(String consumerTag, Delivery delivery){
         String json = new String(delivery.getBody(), StandardCharsets.UTF_8);
         System.out.println(json);
     }
