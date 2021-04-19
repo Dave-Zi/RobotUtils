@@ -17,27 +17,51 @@ public class CommunicationHandler {
     private Connection connection;
     private DeliverCallback myCallback = this::defaultCallback;
 
+    private final String sosQueueName = "Sos";
+    private final int queueSize = 5;
     private int messageId = 0;
 
     /**
      * Open Queue for sending messages
      * @param purge existing messages in queue
+     * @param sos open an additional sos queue to send messages to
      * @throws IOException on connection error
      * @throws TimeoutException on no response from RabbitMQ server
      */
-    public void openSendQueue(boolean purge) throws IOException, TimeoutException {
+    public void openSendQueue(boolean purge, boolean sos) throws IOException, TimeoutException {
         sendChannel = setUpQueueOpening(sendQueueName, purge);
+        if (sos){
+            sendChannel.queueDeclare(sosQueueName, false, false, false, null);
+            sendChannel.queuePurge(sosQueueName);
+        }
     }
     /**
      * Open Queue for receiving messages
      * @param purge existing messages in queue
+     * @param sos open an additional sos queue to receive messages from
      * @throws IOException on connection error
      * @throws TimeoutException on no response from RabbitMQ server
      */
-    public void openReceiveQueue(boolean purge) throws IOException, TimeoutException {
+    public void openReceiveQueue(boolean purge, boolean sos) throws IOException, TimeoutException {
         receiveChannel = setUpQueueOpening(receiveQueueName, purge);
         receiveChannel.basicConsume(receiveQueueName, false, this::onReceiveCallback, consumerTag -> { });
+        if (sos){
+            receiveChannel.basicConsume(sosQueueName, false, this::onReceiveCallback, consumerTag -> { });
+        }
     }
+
+//    /**
+//     * Open Queue for receiving messages
+//     * @param sender is the caller intending to send messages in this queue or to receive.
+//     * @throws IOException on connection error
+//     * @throws TimeoutException on no response from RabbitMQ server
+//     */
+//    public void openSosQueue(boolean sender) throws IOException, TimeoutException {
+//        sosChannel = setUpQueueOpening("sos", true, false);
+//        if (!sender){
+//            sosChannel.basicConsume("sos", true, this::onReceiveCallback, consumerTag -> {});
+//        }
+//    }
     /**
      * Initiate new connection if necessary.
      * Close channel if it was already open, and create new one.
@@ -55,7 +79,7 @@ public class CommunicationHandler {
 
         Channel channel = connection.createChannel();
         channel.basicQos(1);
-        Map<String, Object> args = Map.of("x-max-length", 5);
+        Map<String, Object> args = Map.of("x-max-length", queueSize);
         channel.queueDeclare(queueName, false, false, false, args);
 
         if (purge){
@@ -97,10 +121,12 @@ public class CommunicationHandler {
     /**
      * Put message in Send queue
      * @param message to send
+     * @param sos send this message in the sos queue
      * @throws IOException on connection error
      */
-    public void send(String message) throws IOException {
-        sendChannel.basicPublish("", sendQueueName, new AMQP.BasicProperties.Builder()
+    public void send(String message, boolean sos) throws IOException {
+        String queueName = sos ? sosQueueName : sendQueueName;
+        sendChannel.basicPublish("", queueName, new AMQP.BasicProperties.Builder()
                 .messageId(String.valueOf(messageId))
                 .build(),
                 message.getBytes());
