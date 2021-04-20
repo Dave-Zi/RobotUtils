@@ -10,6 +10,24 @@ public class RobotSensorsData {
     private Map<String, Map<String, Map<String, Double>>> portsMap = new HashMap<>();
     private boolean updated;
 
+    public RobotSensorsData(){}
+
+    public RobotSensorsData(RobotSensorsData robotSensorsData){
+        this.portsMap = new HashMap<>();
+        robotSensorsData.portsMap.forEach((boardName, mappedValue)->
+                {
+                    Map<String, Map<String, Double>> mapForBoard = new HashMap<>();
+                    mappedValue.forEach((index, portsMap) ->
+                            {
+                                Map<String, Double> mapForIndexes = new HashMap<>();
+                                portsMap.forEach(mapForIndexes::put);
+                                mapForBoard.put(index, mapForIndexes);
+                            });
+                    this.portsMap.put(boardName, mapForBoard);
+                });
+        this.updated = robotSensorsData.updated;
+    }
+
     public synchronized boolean isUpdated() {
         return updated;
     }
@@ -41,7 +59,7 @@ public class RobotSensorsData {
     }
 
     // Add new sensors from json to mapping
-    public void addToBoardsMap(String json){
+    public synchronized void addToBoardsMap(String json){
         Map<String, Map<String, Map<String, Double>>> boards = jsonToBoardsMap(json); // Build Map of Robot Ports in json
 
         for (Map.Entry<String, Map<String, Map<String, Double>>> board : boards.entrySet()) { // Iterate over board types
@@ -61,7 +79,7 @@ public class RobotSensorsData {
     }
 
     // Remove from mapping any sensors that exist on given json
-    public void removeFromBoardsMap(String json){
+    public synchronized void removeFromBoardsMap(String json){
         Map<String, Map<String, Map<String, Double>>> data = jsonToBoardsMap(json);
 
         for (Map.Entry<String, Map<String, Map<String, Double>>> entry : data.entrySet()) { // Iterate over boards
