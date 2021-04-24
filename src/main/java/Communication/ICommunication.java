@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 public interface ICommunication {
-    void openSendQueue(boolean purge) throws IOException, TimeoutException;
+    void openSendQueue(boolean purge, boolean sos) throws IOException, TimeoutException;
 
     void openReceiveQueue(boolean purge, boolean sos) throws IOException, TimeoutException;
 

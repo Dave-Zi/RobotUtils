@@ -76,10 +76,12 @@ public class CommunicationHandler implements ICommunication {
      * @throws IOException      on connection error
      * @throws TimeoutException on no response from RabbitMQ server
      */
-    public void openSendQueue(boolean purge) throws IOException, TimeoutException {
+    public void openSendQueue(boolean purge, boolean sos) throws IOException, TimeoutException {
         sendChannel = setUpQueueOpening(sendQueueName, purge);
         sendChannel.queueDeclare(sosQueueName, false, false, false, null);
-        sendChannel.queuePurge(sosQueueName);
+        if (sos){
+            sendChannel.queuePurge(sosQueueName);
+        }
     }
 
     /**

@@ -13,19 +13,18 @@ public class RobotSensorsData {
     @Override
     public synchronized RobotSensorsData clone(){
         RobotSensorsData robotSensorsData = new RobotSensorsData();
-        this.portsMap = new HashMap<>();
-        robotSensorsData.portsMap.forEach((boardName, mappedValue)->
+        robotSensorsData.portsMap = new HashMap<>();
+        this.portsMap.forEach((boardName, mappedValue)->
                 {
                     Map<String, Map<String, Double>> mapForBoard = new HashMap<>();
-                    mappedValue.forEach((index, portsMap) ->
+                    mappedValue.forEach((index, currentPortsMap) ->
                             {
                                 Map<String, Double> mapForIndexes = new HashMap<>();
-                                portsMap.forEach(mapForIndexes::put);
+                                currentPortsMap.forEach(mapForIndexes::put);
                                 mapForBoard.put(index, mapForIndexes);
                             });
-                    this.portsMap.put(boardName, mapForBoard);
+                    robotSensorsData.portsMap.put(boardName, mapForBoard);
                 });
-        this.updated = robotSensorsData.updated;
         return robotSensorsData;
     }
 
