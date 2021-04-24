@@ -10,7 +10,7 @@ import java.util.concurrent.TimeoutException;
 public class CommunicationHandler implements ICommunication {
 
     private final String sosQueueName = "Sos";
-    private final int queueSize = 5;
+    private final int queueSize = 1;
     private Channel sendChannel;
     private Channel receiveChannel;
     private String sendQueueName = "Commands";
