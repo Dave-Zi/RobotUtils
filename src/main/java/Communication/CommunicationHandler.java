@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
-public class CommunicationHandler {
+public class CommunicationHandler implements ICommunication{
 
     private Channel sendChannel;
     private Channel receiveChannel;
@@ -24,30 +24,34 @@ public class CommunicationHandler {
     /**
      * Open Queue for sending messages
      * @param purge existing messages in queue
-     * @param sos open an additional sos queue to send messages to
-     * @throws IOException on connection error
-     * @throws TimeoutException on no response from RabbitMQ server
      */
-    public void openSendQueue(boolean purge, boolean sos) throws IOException, TimeoutException {
-        sendChannel = setUpQueueOpening(sendQueueName, purge);
-        if (sos){
+    public void openSendQueue(boolean purge){
+
+        try {
+            sendChannel = setUpQueueOpening(sendQueueName, purge);
             sendChannel.queueDeclare(sosQueueName, false, false, false, null);
             sendChannel.queuePurge(sosQueueName);
+        } catch (IOException | TimeoutException e) {
+            e.printStackTrace();
         }
+
     }
     /**
      * Open Queue for receiving messages
      * @param purge existing messages in queue
      * @param sos open an additional sos queue to receive messages from
-     * @throws IOException on connection error
-     * @throws TimeoutException on no response from RabbitMQ server
      */
-    public void openReceiveQueue(boolean purge, boolean sos) throws IOException, TimeoutException {
-        receiveChannel = setUpQueueOpening(receiveQueueName, purge);
-        receiveChannel.basicConsume(receiveQueueName, false, this::onReceiveCallback, consumerTag -> { });
-        if (sos){
-            receiveChannel.basicConsume(sosQueueName, false, this::onReceiveCallback, consumerTag -> { });
+    public void openReceiveQueue(boolean purge, boolean sos){
+        try {
+            receiveChannel = setUpQueueOpening(receiveQueueName, purge);
+            receiveChannel.basicConsume(receiveQueueName, false, this::onReceiveCallback, consumerTag -> { });
+            if (sos){
+                receiveChannel.basicConsume(sosQueueName, false, this::onReceiveCallback, consumerTag -> { });
+            }
+        } catch (IOException | TimeoutException e) {
+            e.printStackTrace();
         }
+
     }
 
 //    /**
@@ -88,49 +92,60 @@ public class CommunicationHandler {
 
         return channel;
     }
-
-    /**
-     * Close Send queue
-     * @throws IOException on connection error
-     * @throws TimeoutException on no response from RabbitMQ server
-     */
-    public void closeSendQueue() throws IOException, TimeoutException {
-        sendChannel.close();
-    }
-
-    /**
-     * Close Receive queue
-     * @throws IOException on connection error
-     * @throws TimeoutException on no response from RabbitMQ server
-     */
-    public void closeReceiveQueue() throws IOException, TimeoutException {
-        receiveChannel.close();
-    }
+//
+//    /**
+//     * Close Send queue
+//     * @throws IOException on connection error
+//     * @throws TimeoutException on no response from RabbitMQ server
+//     */
+//    public void closeSendQueue() throws IOException, TimeoutException {
+//        sendChannel.close();
+//    }
+//
+//    /**
+//     * Close Receive queue
+//     * @throws IOException on connection error
+//     * @throws TimeoutException on no response from RabbitMQ server
+//     */
+//    public void closeReceiveQueue() throws IOException, TimeoutException {
+//        receiveChannel.close();
+//    }
 
     /**
      * Close Send and Receive connection
-     * @throws IOException on connection error
-     * @throws TimeoutException on no response from RabbitMQ server
      */
-    public void closeQueues() throws IOException, TimeoutException {
-        sendChannel.close();
-        receiveChannel.close();
-        connection.close();
+    public void closeConnection() {
+        try {
+            if (sendChannel != null){
+                sendChannel.close();
+            }
+            if (receiveChannel != null){
+                receiveChannel.close();
+            }
+            if (connection != null){
+                connection.close();
+            }
+        } catch (IOException | TimeoutException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
      * Put message in Send queue
      * @param message to send
      * @param sos send this message in the sos queue
-     * @throws IOException on connection error
      */
-    public void send(String message, boolean sos) throws IOException {
+    public void send(String message, boolean sos) {
         String queueName = sos ? sosQueueName : sendQueueName;
-        sendChannel.basicPublish("", queueName, new AMQP.BasicProperties.Builder()
-                .messageId(String.valueOf(messageId))
-                .build(),
-                message.getBytes());
-        messageId++;
+        try {
+            sendChannel.basicPublish("", queueName, new AMQP.BasicProperties.Builder()
+                    .messageId(String.valueOf(messageId))
+                    .build(),
+                    message.getBytes());
+            messageId++;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -194,7 +209,7 @@ public class CommunicationHandler {
         this.receiveQueueName = receiveQueueName;
     }
 
-    public void setMyCallback(DeliverCallback myCallback) {
+    public void setCallback(DeliverCallback myCallback) {
         this.myCallback = myCallback;
     }
 
