@@ -10,9 +10,9 @@ public class RobotSensorsData {
     private Map<String, Map<String, Map<String, Double>>> portsMap = new HashMap<>();
     private boolean updated;
 
-    public RobotSensorsData(){}
-
-    public RobotSensorsData(RobotSensorsData robotSensorsData){
+    @Override
+    public synchronized RobotSensorsData clone(){
+        RobotSensorsData robotSensorsData = new RobotSensorsData();
         this.portsMap = new HashMap<>();
         robotSensorsData.portsMap.forEach((boardName, mappedValue)->
                 {
@@ -26,6 +26,7 @@ public class RobotSensorsData {
                     this.portsMap.put(boardName, mapForBoard);
                 });
         this.updated = robotSensorsData.updated;
+        return robotSensorsData;
     }
 
     public synchronized boolean isUpdated() {
