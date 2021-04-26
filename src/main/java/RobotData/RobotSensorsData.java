@@ -138,23 +138,45 @@ public class RobotSensorsData {
 
     public Set<String> getBoardNames (){ return portsMap.keySet(); }
 
-    public Map<String, Double> getBoardByNameAndIndex(String name, String index){ return portsMap.get(name).get(index); }
+    public Map<String, Double> getBoardByNameAndIndex(String name, String index){
+        try {
+            return portsMap.get(name).get(index);
+        } catch (NullPointerException e){
+            return null;
+        }
+    }
 
-    public Set<String> getBoardIndexes (String name){ return portsMap.get(name).keySet(); }
+    public Set<String> getBoardIndexes (String name){
+        try {
+            return portsMap.get(name).keySet();
+        } catch (NullPointerException e){
+            return null;
+        }
+    }
 
     public Map<String, Double> getPortsAndValues(String boardName, String index){
-        return getBoardsByName(boardName).get(index);
+        try {
+            return getBoardsByName(boardName).get(index);
+        } catch (NullPointerException e){
+            return null;
+        }
     }
 
     public Set<String> getPorts(String boardName, String boardIndex){
-        return portsMap.get(boardName).get(boardIndex).keySet();
+        try {
+            return portsMap.get(boardName).get(boardIndex).keySet();
+        } catch (NullPointerException e){
+            return null;
+        }
     }
 
     public void clear(){portsMap.clear();}
 
     private void setPortValue(String boardName, String boardIndex, String portName, Double newValue) {
-        Map<String, Double> ports = getPortsAndValues(boardName, boardIndex);
-        ports.replace(portName, newValue);
+        try {
+            Map<String, Double> ports = getPortsAndValues(boardName, boardIndex);
+            ports.replace(portName, newValue);
+        } catch (NullPointerException ignore){}
     }
 
 
