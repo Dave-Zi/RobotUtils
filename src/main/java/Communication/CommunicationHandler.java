@@ -3,151 +3,72 @@ package Communication;
 import com.rabbitmq.client.*;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 public class CommunicationHandler implements ICommunication {
 
-    private final String sosQueueName = "Sos";
-    private final String freeQueueName = "Free";
-    private final int queueSize = 1;
-    private Channel sendChannel;
-    private Channel receiveChannel;
-    private Channel freeChannel;
-    private String sendQueueName = "Commands";
-    private String receiveQueueName = "Data";
+    private Channel restrictedChannel;
+    private Channel unrestrictedChannel;
     private ConnectionFactory factory = new ConnectionFactory();
     private Connection connection;
-    private DeliverCallback myCallback = this::defaultCallback;
     private int messageId = 0;
 
-    public CommunicationHandler(String sendQueueName, String receiveQueueName) {
-        this.sendQueueName = sendQueueName;
-        this.receiveQueueName = receiveQueueName;
+    public CommunicationHandler() throws IOException, TimeoutException {
+        connection = factory.newConnection();
+
+        restrictedChannel = connection.createChannel();
+        restrictedChannel.basicQos(1);
+        Map<String, Object> args = Map.of("x-max-length", 1);
+        restrictedChannel.queueDeclare(QueueNameEnum.Commands.name(), false, false, false, args);
+        restrictedChannel.queueDeclare(QueueNameEnum.Data.name(), false, false, false, args);
+
+        unrestrictedChannel = connection.createChannel();
+        unrestrictedChannel.queueDeclare(QueueNameEnum.Free.name(), false, false, false, null);
+        unrestrictedChannel.queueDeclare(QueueNameEnum.SOS.name(), false, false, false, null);
     }
 
-    public CommunicationHandler(String sendQueueName, String receiveQueueName, DeliverCallback myCallback) {
-        this.sendQueueName = sendQueueName;
-        this.receiveQueueName = receiveQueueName;
-        this.myCallback = myCallback;
-    }
+    public void purgeQueue(QueueNameEnum queue) throws IOException {
+        switch (queue){
+            case Commands:
+                restrictedChannel.queuePurge(queue.name());
+                break;
 
-//    /**
-//     * Open Queue for receiving messages
-//     * @param sender is the caller intending to send messages in this queue or to receive.
-//     * @throws IOException on connection error
-//     * @throws TimeoutException on no response from RabbitMQ server
-//     */
-//    public void openSosQueue(boolean sender) throws IOException, TimeoutException {
-//        sosChannel = setUpQueueOpening("sos", true, false);
-//        if (!sender){
-//            sosChannel.basicConsume("sos", true, this::onReceiveCallback, consumerTag -> {});
-//        }
-//    }
+            case Data:
+                restrictedChannel.queuePurge(queue.name());
+                break;
 
-    public CommunicationHandler(DeliverCallback myCallback) {
-        this.myCallback = myCallback;
-    }
+            case SOS:
+                unrestrictedChannel.queuePurge(queue.name());
+                break;
 
-//    /**
-//     * Close Send queue
-//     * @throws IOException on connection error
-//     * @throws TimeoutException on no response from RabbitMQ server
-//     */
-//    public void closeSendQueue() throws IOException, TimeoutException {
-//        sendChannel.close();
-//    }
-//
-//    /**
-//     * Close Receive queue
-//     * @throws IOException on connection error
-//     * @throws TimeoutException on no response from RabbitMQ server
-//     */
-//    public void closeReceiveQueue() throws IOException, TimeoutException {
-//        receiveChannel.close();
-//    }
-
-    public CommunicationHandler() {
-    }
-
-    /**
-     * Open Queue for sending messages
-     *
-     * @param purge existing messages in queue
-     * @throws IOException      on connection error
-     * @throws TimeoutException on no response from RabbitMQ server
-     */
-    public void openSendQueue(boolean purge, boolean sos) throws IOException, TimeoutException {
-        sendChannel = setUpQueueOpening(sendQueueName, purge);
-        sendChannel.queueDeclare(sosQueueName, false, false, false, null);
-        if (sos){
-            sendChannel.queuePurge(sosQueueName);
+            case Free:
+                unrestrictedChannel.queuePurge(queue.name());
         }
     }
 
-    /**
-     * Open Queue for receiving messages
-     *
-     * @param purge existing messages in queue
-     * @param sos   open an additional sos queue to receive messages from
-     * @throws IOException      on connection error
-     * @throws TimeoutException on no response from RabbitMQ server
-     */
-    public void openReceiveQueue(boolean purge, boolean sos) throws IOException, TimeoutException {
-        receiveChannel = setUpQueueOpening(receiveQueueName, purge);
-        receiveChannel.basicConsume(receiveQueueName, false, this::onReceiveCallback, consumerTag -> {
-        });
-        if (sos) {
-            receiveChannel.basicConsume(sosQueueName, false, this::onReceiveCallback, consumerTag -> {
-            });
-        }
-    }
+    public void consumeFromQueue(QueueNameEnum queue, DeliverCallback callback) throws IOException {
+        switch (queue){
+            case SOS:
+                unrestrictedChannel.basicConsume(queue.name(), true,
+                        callback, consumerTag -> {});
+                break;
 
-    @Override
-    public void openFreeQueue(boolean purge, boolean consumer) throws IOException, TimeoutException {
-        if (connection == null) {
-            connection = factory.newConnection();
-        }
+            case Commands:
+                restrictedChannel.basicConsume(queue.name(), false,
+                        (consumerTag, delivery) -> delayedAckCallback(consumerTag, delivery, callback), consumerTag -> {});
+                break;
 
-        freeChannel = connection.createChannel();
-        freeChannel.queueDeclare(freeQueueName, false, false, false, null);
+            case Data:
+                restrictedChannel.basicConsume(queue.name(), false,
+                        (consumerTag, delivery) -> delayedAckCallback(consumerTag, delivery, callback), consumerTag -> {});
+                break;
 
-        if (purge) {
-            freeChannel.queuePurge(freeQueueName);
-        }
-
-        if (consumer) {
-            freeChannel.basicConsume(freeQueueName, false, this::onReceiveCallback, consumerTag -> {});
-        }
-    }
-
-    /**
-     * Initiate new connection if necessary.
-     * Close channel if it was already open, and create new one.
-     * Purge queue if requested
-     *
-     * @param queueName name of new queue
-     * @param purge     existing messages on queue
-     * @return the channel with its opened queue
-     * @throws IOException      on connection error
-     * @throws TimeoutException on no response from RabbitMQ server
-     */
-    private Channel setUpQueueOpening(String queueName, boolean purge) throws IOException, TimeoutException {
-        if (connection == null) {
-            connection = factory.newConnection();
-        }
-
-        Channel channel = connection.createChannel();
-        channel.basicQos(1);
-        Map<String, Object> args = Map.of("x-max-length", queueSize);
-        channel.queueDeclare(queueName, false, false, false, args);
-
-        if (purge) {
-            channel.queuePurge(queueName);
-        }
-
-        return channel;
+            case Free:
+                unrestrictedChannel.basicConsume(queue.name(), true,
+                        callback, consumerTag -> { });
+                break;
+            }
     }
 
     /**
@@ -157,14 +78,11 @@ public class CommunicationHandler implements ICommunication {
      * @throws TimeoutException on no response from RabbitMQ server
      */
     public void closeConnection() throws IOException, TimeoutException {
-        if (sendChannel != null){
-            sendChannel.close();
+        if (restrictedChannel != null){
+            restrictedChannel.close();
         }
-        if (receiveChannel != null){
-            receiveChannel.close();
-        }
-        if (freeChannel != null){
-            freeChannel.close();
+        if (unrestrictedChannel != null){
+            unrestrictedChannel.close();
         }
         if (connection != null){
             connection.close();
@@ -175,64 +93,59 @@ public class CommunicationHandler implements ICommunication {
      * Put message in Send queue
      *
      * @param message to send
-     * @param sos     send this message in the sos queue
+     * @param queueName  send the message in this queue
      * @throws IOException on connection error
      */
-    public void send(String message, boolean sos) throws IOException {
-        String queueName = sos ? sosQueueName : sendQueueName;
-        sendChannel.basicPublish("", queueName, new AMQP.BasicProperties.Builder()
-                        .messageId(String.valueOf(messageId))
-                        .build(),
-                message.getBytes());
+    public void send(String message, QueueNameEnum queueName) throws IOException {
+        switch (queueName){
+            case Commands:
+                restrictedChannel.basicPublish("", queueName.name(), new AMQP.BasicProperties.Builder()
+                                .messageId(String.valueOf(messageId))
+                                .build(),
+                        message.getBytes());
+                break;
+
+            case Data:
+                restrictedChannel.basicPublish("", queueName.name(), new AMQP.BasicProperties.Builder()
+                                .messageId(String.valueOf(messageId))
+                                .build(),
+                        message.getBytes());
+                break;
+
+            case SOS:
+                unrestrictedChannel.basicPublish("", queueName.name(), new AMQP.BasicProperties.Builder()
+                                .messageId(String.valueOf(messageId))
+                                .build(),
+                        message.getBytes());
+                break;
+
+            case Free:
+                unrestrictedChannel.basicPublish("", queueName.name(), new AMQP.BasicProperties.Builder()
+                                .messageId(String.valueOf(messageId))
+                                .build(),
+                        message.getBytes());
+                break;
+        }
         messageId++;
     }
 
     /**
      * Default callback for receiving messages
      *
-     * @param consumerTag Rabbimq consumer tag
+     * @param consumerTag Rabbitmq consumer tag
      * @param delivery    object containing message and data
      */
-    private void onReceiveCallback(String consumerTag, Delivery delivery) {
+    private void delayedAckCallback(String consumerTag, Delivery delivery, DeliverCallback callback) {
         try {
-            myCallback.handle(consumerTag, delivery);
+            callback.handle(consumerTag, delivery);
         } catch (IOException e) {
             e.printStackTrace();
         }
         try {
-            receiveChannel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+            unrestrictedChannel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private void defaultCallback(String consumerTag, Delivery delivery) {
-        String json = new String(delivery.getBody(), StandardCharsets.UTF_8);
-        System.out.println(json);
-    }
-
-    public String getSendQueueName() {
-        return sendQueueName;
-    }
-
-    public void setSendQueueName(String sendQueueName) {
-        this.sendQueueName = sendQueueName;
-    }
-
-    public String getReceiveQueueName() {
-        return receiveQueueName;
-    }
-
-    public void setReceiveQueueName(String receiveQueueName) {
-        this.receiveQueueName = receiveQueueName;
-    }
-
-    public DeliverCallback getMyCallback() {
-        return myCallback;
-    }
-
-    public void setCallback(DeliverCallback myCallback) {
-        this.myCallback = myCallback;
     }
 
     public void setCredentials(String host, String username, String password) {
