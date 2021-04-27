@@ -10,9 +10,11 @@ import java.util.concurrent.TimeoutException;
 public class CommunicationHandler implements ICommunication {
 
     private final String sosQueueName = "Sos";
+    private final String freeQueueName = "Free";
     private final int queueSize = 1;
     private Channel sendChannel;
     private Channel receiveChannel;
+    private Channel freeChannel;
     private String sendQueueName = "Commands";
     private String receiveQueueName = "Data";
     private ConnectionFactory factory = new ConnectionFactory();
@@ -102,6 +104,24 @@ public class CommunicationHandler implements ICommunication {
         }
     }
 
+    @Override
+    public void openFreeQueue(boolean purge, boolean consumer) throws IOException, TimeoutException {
+        if (connection == null) {
+            connection = factory.newConnection();
+        }
+
+        freeChannel = connection.createChannel();
+        freeChannel.queueDeclare(freeQueueName, false, false, false, null);
+
+        if (purge) {
+            freeChannel.queuePurge(freeQueueName);
+        }
+
+        if (consumer) {
+            freeChannel.basicConsume(freeQueueName, false, this::onReceiveCallback, consumerTag -> {});
+        }
+    }
+
     /**
      * Initiate new connection if necessary.
      * Close channel if it was already open, and create new one.
@@ -137,9 +157,18 @@ public class CommunicationHandler implements ICommunication {
      * @throws TimeoutException on no response from RabbitMQ server
      */
     public void closeConnection() throws IOException, TimeoutException {
-        sendChannel.close();
-        receiveChannel.close();
-        connection.close();
+        if (sendChannel != null){
+            sendChannel.close();
+        }
+        if (receiveChannel != null){
+            receiveChannel.close();
+        }
+        if (freeChannel != null){
+            freeChannel.close();
+        }
+        if (connection != null){
+            connection.close();
+        }
     }
 
     /**

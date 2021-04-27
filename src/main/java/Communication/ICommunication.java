@@ -10,6 +10,8 @@ public interface ICommunication {
 
     void openReceiveQueue(boolean purge, boolean sos) throws IOException, TimeoutException;
 
+    void openFreeQueue(boolean purge, boolean sos) throws IOException, TimeoutException;
+
     void closeConnection() throws IOException, TimeoutException;
 
     void send(String message, boolean sos) throws IOException;
