@@ -6,15 +6,16 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 public interface ICommunication {
-    void openSendQueue(boolean purge, boolean sos) throws IOException, TimeoutException;
 
-    void openReceiveQueue(boolean purge, boolean sos) throws IOException, TimeoutException;
+    void purgeQueue(QueueNameEnum queue) throws IOException;
+
+    void consumeFromQueue(QueueNameEnum queue, DeliverCallback callback) throws IOException;
 
     void closeConnection() throws IOException, TimeoutException;
 
-    void send(String message, boolean sos) throws IOException;
+    void send(String message, QueueNameEnum queue) throws IOException;
 
-    void setCredentials(String host, String username, String password) throws IOException, TimeoutException;
-
-    void setCallback(DeliverCallback myCallback);
+    void setCredentials(String host, String username, String password);
 }
+
+
