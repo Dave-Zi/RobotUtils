@@ -16,6 +16,8 @@ public interface ICommunication {
     void send(String message, QueueNameEnum queue) throws IOException;
 
     void setCredentials(String host, String username, String password);
+
+    void connect() throws IOException, TimeoutException;
 }
 
 
