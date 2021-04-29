@@ -6,12 +6,12 @@ import com.google.gson.internal.LinkedTreeMap;
 
 import java.util.*;
 
-public class RobotSensorsData {
+@SuppressWarnings("unused")
+public class RobotSensorsData implements Cloneable{
     private Map<String, Map<String, Map<String, Double>>> portsMap = new HashMap<>();
     private boolean updated;
 
-    @Override
-    public synchronized RobotSensorsData clone(){
+    public synchronized RobotSensorsData deepCopy(){
         RobotSensorsData robotSensorsData = new RobotSensorsData();
         robotSensorsData.portsMap = new HashMap<>();
         this.portsMap.forEach((boardName, mappedValue)->
@@ -39,7 +39,7 @@ public class RobotSensorsData {
 
     public void updateBoardMapValues(String json){
         Gson gson = new Gson();
-        Map element = gson.fromJson(json, Map.class); // json String to Map
+        Map<?, ?> element = gson.fromJson(json, Map.class); // json String to Map
 
         for (Object boardNameKey: element.keySet()) { // Iterate over board types
             String boardName = (String)boardNameKey;
@@ -63,10 +63,10 @@ public class RobotSensorsData {
         Map<String, Map<String, Map<String, Double>>> boards = jsonToBoardsMap(json); // Build Map of Robot Ports in json
 
         for (Map.Entry<String, Map<String, Map<String, Double>>> board : boards.entrySet()) { // Iterate over board types
-            if (portsMap.keySet().contains(board.getKey())){ // If board type already exist in portsMap
+            if (portsMap.containsKey(board.getKey())){ // If board type already exist in portsMap
                 for (Map.Entry<String, Map<String, Double>> entryInBoard : board.getValue().entrySet()) { // Iterate over board map
                     Map<String, Map<String, Double>> boardsMap = portsMap.get(board.getKey());
-                    if (boardsMap.keySet().contains(entryInBoard.getKey())){ // If  existing boards map already contain this board
+                    if (boardsMap.containsKey(entryInBoard.getKey())){ // If  existing boards map already contain this board
                         boardsMap.get(entryInBoard.getKey()).putAll(entryInBoard.getValue()); // Add boards value to pre existing port list
                     } else {
                         boardsMap.put(entryInBoard.getKey(), entryInBoard.getValue()); // Put new board into map
@@ -83,10 +83,10 @@ public class RobotSensorsData {
         Map<String, Map<String, Map<String, Double>>> data = jsonToBoardsMap(json);
 
         for (Map.Entry<String, Map<String, Map<String, Double>>> entry : data.entrySet()) { // Iterate over boards
-            if (portsMap.keySet().contains(entry.getKey())){ // If our board map contains this board
+            if (portsMap.containsKey(entry.getKey())){ // If our board map contains this board
                 for (Map.Entry<String, Map<String, Double>> entryInBoard : entry.getValue().entrySet()) { // Iterate over board indexes
                     Map<String, Map<String, Double>> boardsMap = portsMap.get(entry.getKey());
-                    if (boardsMap.keySet().contains(entryInBoard.getKey())){ // If our board map contains board with this index
+                    if (boardsMap.containsKey(entryInBoard.getKey())){ // If our board map contains board with this index
                         entryInBoard.getValue().forEach((port, value) -> boardsMap.get(entryInBoard.getKey()).remove(port));
                     }
                 }
@@ -99,7 +99,7 @@ public class RobotSensorsData {
     private Map<String, Map<String, Map<String, Double>>> jsonToBoardsMap(String json) {
         Map<String, Map<String, Map<String, Double>>> data = new HashMap<>();
         Gson gson = new Gson();
-        Map element = gson.fromJson(json, Map.class); // json String to Map
+        Map<?, ?> element = gson.fromJson(json, Map.class); // json String to Map
 
         for (Object key: element.keySet()){ // Iterate over board types
             data.put((String) key, new HashMap<>()); // Add board name to map

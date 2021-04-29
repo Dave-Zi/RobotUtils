@@ -6,12 +6,13 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
+@SuppressWarnings("unused")
 public class CommunicationHandler implements ICommunication {
 
-    private Channel restrictedChannel;
-    private Channel unrestrictedChannel;
-    private ConnectionFactory factory = new ConnectionFactory();
-    private Connection connection;
+    private final Channel restrictedChannel;
+    private final Channel unrestrictedChannel;
+    private final ConnectionFactory factory = new ConnectionFactory();
+    private final Connection connection;
     private int messageId = 0;
 
     public CommunicationHandler() throws IOException, TimeoutException {
@@ -31,44 +32,31 @@ public class CommunicationHandler implements ICommunication {
     public void purgeQueue(QueueNameEnum queue) throws IOException {
         switch (queue){
             case Commands:
-                restrictedChannel.queuePurge(queue.name());
-                break;
-
             case Data:
                 restrictedChannel.queuePurge(queue.name());
                 break;
 
             case SOS:
-                unrestrictedChannel.queuePurge(queue.name());
-                break;
-
             case Free:
                 unrestrictedChannel.queuePurge(queue.name());
+                break;
         }
     }
 
     public void consumeFromQueue(QueueNameEnum queue, DeliverCallback callback) throws IOException {
         switch (queue){
             case SOS:
+            case Free:
                 unrestrictedChannel.basicConsume(queue.name(), true,
                         callback, consumerTag -> {});
                 break;
 
             case Commands:
-                restrictedChannel.basicConsume(queue.name(), false,
-                        (consumerTag, delivery) -> delayedAckCallback(consumerTag, delivery, callback), consumerTag -> {});
-                break;
-
             case Data:
                 restrictedChannel.basicConsume(queue.name(), false,
                         (consumerTag, delivery) -> delayedAckCallback(consumerTag, delivery, callback), consumerTag -> {});
                 break;
-
-            case Free:
-                unrestrictedChannel.basicConsume(queue.name(), true,
-                        callback, consumerTag -> { });
-                break;
-            }
+        }
     }
 
     /**
@@ -99,12 +87,6 @@ public class CommunicationHandler implements ICommunication {
     public void send(String message, QueueNameEnum queueName) throws IOException {
         switch (queueName){
             case Commands:
-                restrictedChannel.basicPublish("", queueName.name(), new AMQP.BasicProperties.Builder()
-                                .messageId(String.valueOf(messageId))
-                                .build(),
-                        message.getBytes());
-                break;
-
             case Data:
                 restrictedChannel.basicPublish("", queueName.name(), new AMQP.BasicProperties.Builder()
                                 .messageId(String.valueOf(messageId))
@@ -113,12 +95,6 @@ public class CommunicationHandler implements ICommunication {
                 break;
 
             case SOS:
-                unrestrictedChannel.basicPublish("", queueName.name(), new AMQP.BasicProperties.Builder()
-                                .messageId(String.valueOf(messageId))
-                                .build(),
-                        message.getBytes());
-                break;
-
             case Free:
                 unrestrictedChannel.basicPublish("", queueName.name(), new AMQP.BasicProperties.Builder()
                                 .messageId(String.valueOf(messageId))

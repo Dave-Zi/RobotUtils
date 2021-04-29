@@ -4,7 +4,7 @@ import com.rabbitmq.client.DeliverCallback;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
-
+@SuppressWarnings("unused")
 public interface ICommunication {
 
     void purgeQueue(QueueNameEnum queue) throws IOException;
