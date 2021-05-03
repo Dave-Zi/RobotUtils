@@ -6,25 +6,28 @@ import com.google.gson.internal.LinkedTreeMap;
 
 import java.util.*;
 
-@SuppressWarnings("unused")
-public class RobotSensorsData implements Cloneable{
+@SuppressWarnings({"unused", "WeakerAccess"})
+
+public class RobotSensorsData implements Cloneable {
+
+
     private Map<String, Map<String, Map<String, Double>>> portsMap = new HashMap<>();
     private boolean updated;
 
-    public synchronized RobotSensorsData deepCopy(){
+    synchronized RobotSensorsData deepCopy() {
         RobotSensorsData robotSensorsData = new RobotSensorsData();
         robotSensorsData.portsMap = new HashMap<>();
-        this.portsMap.forEach((boardName, mappedValue)->
-                {
-                    Map<String, Map<String, Double>> mapForBoard = new HashMap<>();
-                    mappedValue.forEach((index, currentPortsMap) ->
-                            {
-                                Map<String, Double> mapForIndexes = new HashMap<>();
-                                currentPortsMap.forEach(mapForIndexes::put);
-                                mapForBoard.put(index, mapForIndexes);
-                            });
-                    robotSensorsData.portsMap.put(boardName, mapForBoard);
-                });
+        this.portsMap.forEach((boardName, mappedValue) ->
+        {
+            Map<String, Map<String, Double>> mapForBoard = new HashMap<>();
+            mappedValue.forEach((index, currentPortsMap) ->
+            {
+                Map<String, Double> mapForIndexes = new HashMap<>();
+                currentPortsMap.forEach(mapForIndexes::put);
+                mapForBoard.put(index, mapForIndexes);
+            });
+            robotSensorsData.portsMap.put(boardName, mapForBoard);
+        });
         return robotSensorsData;
     }
 
@@ -32,22 +35,22 @@ public class RobotSensorsData implements Cloneable{
         return updated;
     }
 
-    public String toJson(){
+    public String toJson() {
         updated = false;
         return new GsonBuilder().create().toJson(portsMap);
     }
 
-    public void updateBoardMapValues(String json){
+    public void updateBoardMapValues(String json) {
         Gson gson = new Gson();
         Map<?, ?> element = gson.fromJson(json, Map.class); // json String to Map
 
-        for (Object boardNameKey: element.keySet()) { // Iterate over board types
-            String boardName = (String)boardNameKey;
-            if (portsMap.containsKey(boardName)){ // We want only boards that exist on our map
+        for (Object boardNameKey : element.keySet()) { // Iterate over board types
+            String boardName = (String) boardNameKey;
+            if (portsMap.containsKey(boardName)) { // We want only boards that exist on our map
                 @SuppressWarnings("unchecked")
-                Map<String, Map<String, Double>> indexesToPorts = (Map<String, Map<String, Double>>)element.get(boardNameKey);
-                for (Map.Entry<String, Map<String, Double>> boardIndex: indexesToPorts.entrySet()) { // Iterate over board indexes
-                    if (portsMap.get(boardName).containsKey(boardIndex.getKey())){
+                Map<String, Map<String, Double>> indexesToPorts = (Map<String, Map<String, Double>>) element.get(boardNameKey);
+                for (Map.Entry<String, Map<String, Double>> boardIndex : indexesToPorts.entrySet()) { // Iterate over board indexes
+                    if (portsMap.get(boardName).containsKey(boardIndex.getKey())) {
                         for (Map.Entry<String, Double> portAndValue : boardIndex.getValue().entrySet()) {
                             setPortValue(boardName, boardIndex.getKey(), portAndValue.getKey(), portAndValue.getValue());
                             updated = true;
@@ -59,14 +62,14 @@ public class RobotSensorsData implements Cloneable{
     }
 
     // Add new sensors from json to mapping
-    public synchronized void addToBoardsMap(String json){
+    public synchronized void addToBoardsMap(String json) {
         Map<String, Map<String, Map<String, Double>>> boards = jsonToBoardsMap(json); // Build Map of Robot Ports in json
 
         for (Map.Entry<String, Map<String, Map<String, Double>>> board : boards.entrySet()) { // Iterate over board types
-            if (portsMap.containsKey(board.getKey())){ // If board type already exist in portsMap
+            if (portsMap.containsKey(board.getKey())) { // If board type already exist in portsMap
                 for (Map.Entry<String, Map<String, Double>> entryInBoard : board.getValue().entrySet()) { // Iterate over board map
                     Map<String, Map<String, Double>> boardsMap = portsMap.get(board.getKey());
-                    if (boardsMap.containsKey(entryInBoard.getKey())){ // If  existing boards map already contain this board
+                    if (boardsMap.containsKey(entryInBoard.getKey())) { // If  existing boards map already contain this board
                         boardsMap.get(entryInBoard.getKey()).putAll(entryInBoard.getValue()); // Add boards value to pre existing port list
                     } else {
                         boardsMap.put(entryInBoard.getKey(), entryInBoard.getValue()); // Put new board into map
@@ -79,14 +82,14 @@ public class RobotSensorsData implements Cloneable{
     }
 
     // Remove from mapping any sensors that exist on given json
-    public synchronized void removeFromBoardsMap(String json){
+    public synchronized void removeFromBoardsMap(String json) {
         Map<String, Map<String, Map<String, Double>>> data = jsonToBoardsMap(json);
 
         for (Map.Entry<String, Map<String, Map<String, Double>>> entry : data.entrySet()) { // Iterate over boards
-            if (portsMap.containsKey(entry.getKey())){ // If our board map contains this board
+            if (portsMap.containsKey(entry.getKey())) { // If our board map contains this board
                 for (Map.Entry<String, Map<String, Double>> entryInBoard : entry.getValue().entrySet()) { // Iterate over board indexes
                     Map<String, Map<String, Double>> boardsMap = portsMap.get(entry.getKey());
-                    if (boardsMap.containsKey(entryInBoard.getKey())){ // If our board map contains board with this index
+                    if (boardsMap.containsKey(entryInBoard.getKey())) { // If our board map contains board with this index
                         entryInBoard.getValue().forEach((port, value) -> boardsMap.get(entryInBoard.getKey()).remove(port));
                     }
                 }
@@ -101,14 +104,14 @@ public class RobotSensorsData implements Cloneable{
         Gson gson = new Gson();
         Map<?, ?> element = gson.fromJson(json, Map.class); // json String to Map
 
-        for (Object key: element.keySet()){ // Iterate over board types
+        for (Object key : element.keySet()) { // Iterate over board types
             data.put((String) key, new HashMap<>()); // Add board name to map
             Object value = element.get(key);
 
             // Check if board contains map of boards or list of ports
             // board in json might have mapping of a number of boards of its type
             // or list of ports that will be treated as if there's only one board of this type
-            if (value instanceof ArrayList){ // If board has list of ports.
+            if (value instanceof ArrayList) { // If board has list of ports.
 
                 @SuppressWarnings("unchecked")
                 ArrayList<String> ports = (ArrayList<String>) value;
@@ -116,7 +119,7 @@ public class RobotSensorsData implements Cloneable{
                 ports.forEach(port -> portMap.put(fixName(port), null));
                 data.get(key).put("_1", portMap); // Index of the first board of this type is _1
 
-            } else if (value instanceof LinkedTreeMap){ // If board has map boards of this type
+            } else if (value instanceof LinkedTreeMap) { // If board has map boards of this type
                 @SuppressWarnings("unchecked")
                 Map<String, List<String>> valueMapped = (Map<String, List<String>>) value; // Map of boards to ports list
                 for (Map.Entry<String, List<String>> intAndList : valueMapped.entrySet()) {
@@ -132,58 +135,67 @@ public class RobotSensorsData implements Cloneable{
         return data;
     }
 
-    public Map<String, Map<String, Double>> getBoardsByName(String name){
+    private Map<String, Map<String, Double>> getBoardsByName(String name) {
         return portsMap.get(name);
     }
 
-    public Set<String> getBoardNames (){ return portsMap.keySet(); }
+    public Set<String> getBoardNames() {
+        return portsMap.keySet();
+    }
 
-    public Map<String, Double> getBoardByNameAndIndex(String name, String index){
+    public Map<String, Double> getBoardByNameAndIndex(String name, String index) {
         try {
             return portsMap.get(name).get(index);
-        } catch (NullPointerException e){
+        } catch (NullPointerException e) {
             return null;
         }
     }
 
-    public Set<String> getBoardIndexes (String name){
+    public Set<String> getBoardIndexes(String name) {
         try {
             return portsMap.get(name).keySet();
-        } catch (NullPointerException e){
+        } catch (NullPointerException e) {
             return null;
         }
     }
 
-    public Map<String, Double> getPortsAndValues(String boardName, String index){
+    public Map<String, Double> getPortsAndValues(String boardName, String index) {
         try {
             return getBoardsByName(boardName).get(index);
-        } catch (NullPointerException e){
+        } catch (NullPointerException e) {
             return null;
         }
     }
 
-    public Set<String> getPorts(String boardName, String boardIndex){
+    public Set<String> getPorts(String boardName, String boardIndex) {
         try {
             return portsMap.get(boardName).get(boardIndex).keySet();
-        } catch (NullPointerException e){
+        } catch (NullPointerException e) {
             return null;
         }
     }
 
-    public void clear(){portsMap.clear();}
+    public void clear() {
+        portsMap.clear();
+    }
 
     private void setPortValue(String boardName, String boardIndex, String portName, Double newValue) {
         try {
             Map<String, Double> ports = getPortsAndValues(boardName, boardIndex);
             ports.replace(portName, newValue);
-        } catch (NullPointerException ignore){}
+        } catch (NullPointerException ignore) {
+        }
     }
 
 
     // Prepend '_' to port and board index names that start with a number
-    private String fixName(String name){
+    private String fixName(String name) {
         char firstChar = name.charAt(0);
-        return Character.isDigit(firstChar) ? "_"+name : name;
+        return Character.isDigit(firstChar) ? "_" + name : name;
+    }
+
+    public Map<String, Map<String, Map<String, Double>>> getPortsMap() {
+        return portsMap;
     }
 //    {"Ev3":{"1":["2"],"2":["3"]},"GrovePi":["D3"]}
 
