@@ -5,11 +5,14 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @SuppressWarnings({"unused", "WeakerAccess"})
 
 public class RobotSensorsData implements Cloneable {
 
+    private final Logger logger = Logger.getLogger("Robot Sensor Data");
     //    board name -> board index -> ports -> values
     private Map<String, Map<String, Map<String, Double>>> portsMap = new HashMap<>();
     //    board name -> board index -> board nickname
@@ -39,7 +42,7 @@ public class RobotSensorsData implements Cloneable {
         return updated;
     }
 
-    public void buildNicknameMaps(String json) {
+    public void buildNicknameMaps(String json) throws IllegalArgumentException {
         Gson gson = new Gson();
         Map<?, ?> element = gson.fromJson(json, Map.class); // json String to Map
         for (Object boardNameKey : element.keySet()) { // Iterate over board types
@@ -52,16 +55,32 @@ public class RobotSensorsData implements Cloneable {
 
             for (int i = 0; i < boardsDataList.size(); i++) {
                 Map<String, ?> portDataMap = boardsDataList.get(i);
-                if (portDataMap.containsKey("Name") && !((String) portDataMap.get("Name")).isBlank()) {
-                    indexNicknames.put("_" + (i + 1), (String) portDataMap.get("Name"));
+                if (portDataMap.containsKey("Name") && !((String) portDataMap.get("Name")).isBlank()){
+                    String nickName = (String) portDataMap.get("Name");
+                    if (indexNicknames.containsValue(nickName)) {
+                        String errorMessage = String.format("Another board of type %s was already given the name %s", boardName, nickName);
+                        logger.log(Level.SEVERE, errorMessage);
+                        throw new IllegalArgumentException(errorMessage);
+                    }
+                    indexNicknames.put("_" + (i+1), (String) portDataMap.get("Name"));
                 }
                 Map<String, String> portsNicknames = new HashMap<>();
                 for (Map.Entry<String, ?> ports : portDataMap.entrySet()) {
                     if (ports.getValue() instanceof LinkedTreeMap) { // Check if port value is actually a map with nickname
                         @SuppressWarnings("unchecked")
                         Map<String, String> valueMap = (Map<String, String>) ports.getValue();
-                        if (valueMap.containsKey("Name") && !valueMap.get("Name").isBlank()) {
-                            portsNicknames.put(fixName(ports.getKey()), valueMap.get("Name"));
+                        if (valueMap.containsKey("Name") && !valueMap.get("Name").isBlank()){
+                            String nickName = valueMap.get("Name");
+                            String errorMessage = String.format(
+                                    "Another port on board %s of type %s on was already given the name %s",
+                                    indexNicknames.containsKey("_" + (i+1))? indexNicknames.get("_" + (i+1)): "_" + (i+1),
+                                    boardName,
+                                    nickName);
+                            if (indexNicknames.containsValue(nickName)) {
+                                logger.log(Level.SEVERE, errorMessage);
+                                throw new IllegalArgumentException(errorMessage);
+                            }
+                            portsNicknames.put(fixName(ports.getKey()), nickName);
                         }
                     }
                 }
