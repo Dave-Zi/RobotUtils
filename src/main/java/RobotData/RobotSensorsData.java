@@ -42,7 +42,7 @@ public class RobotSensorsData implements Cloneable {
         return updated;
     }
 
-    public void buildNicknameMaps(String json) throws Exception {
+    public void buildNicknameMaps(String json) throws IllegalArgumentException {
         Gson gson = new Gson();
         Map<?, ?> element = gson.fromJson(json, Map.class); // json String to Map
         for (Object boardNameKey : element.keySet()) { // Iterate over board types
@@ -60,7 +60,7 @@ public class RobotSensorsData implements Cloneable {
                     if (indexNicknames.containsValue(nickName)) {
                         String errorMessage = String.format("Another board of type %s was already given the name %s", boardName, nickName);
                         logger.log(Level.SEVERE, errorMessage);
-                        throw new Exception(errorMessage);
+                        throw new IllegalArgumentException(errorMessage);
                     }
                     indexNicknames.put("_" + (i+1), (String) portDataMap.get("Name"));
                 }
@@ -78,7 +78,7 @@ public class RobotSensorsData implements Cloneable {
                                     nickName);
                             if (indexNicknames.containsValue(nickName)) {
                                 logger.log(Level.SEVERE, errorMessage);
-                                throw new Exception(errorMessage);
+                                throw new IllegalArgumentException(errorMessage);
                             }
                             portsNicknames.put(fixName(ports.getKey()), nickName);
                         }
