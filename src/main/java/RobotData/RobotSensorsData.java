@@ -16,9 +16,9 @@ public class RobotSensorsData implements Cloneable {
     //    board name -> board index -> ports -> values
     private Map<String, Map<String, Map<String, Double>>> portsMap = new HashMap<>();
     //    board name -> board index -> board nickname
-    private final Map<String, Map<String, String>> boardNicknamesMap = new HashMap<>();
+    final Map<String, Map<String, String>> boardNicknamesMap = new HashMap<>();
     //    board name -> board index -> board ports -> board nicknames
-    private final Map<String, Map<String, Map<String, String>>> portNicknamesMap = new HashMap<>();
+    final Map<String, Map<String, Map<String, String>>> portNicknamesMap = new HashMap<>();
     private boolean updated;
 
     public synchronized RobotSensorsData deepCopy() {
@@ -42,6 +42,7 @@ public class RobotSensorsData implements Cloneable {
         return updated;
     }
 
+
     public void buildNicknameMaps(String json) throws Exception {
         Gson gson = new Gson();
         Map<?, ?> element = gson.fromJson(json, Map.class); // json String to Map
@@ -53,8 +54,9 @@ public class RobotSensorsData implements Cloneable {
             ArrayList<Map<String, ?>> boardsDataList =
                     (ArrayList<Map<String, ?>>) element.get(boardNameKey);
 
-            for (int i = 0; i< boardsDataList.size(); i++) {
+            for (int i = 0; i < boardsDataList.size(); i++) {
                 Map<String, ?> portDataMap = boardsDataList.get(i);
+
                 if (portDataMap.containsKey("Name") && !((String) portDataMap.get("Name")).isBlank()){
                     String nickName = (String) portDataMap.get("Name");
                     if (indexNicknames.containsValue(nickName)) {
@@ -63,12 +65,14 @@ public class RobotSensorsData implements Cloneable {
                         throw new Exception(errorMessage);
                     }
                     indexNicknames.put("_" + (i+1), (String) portDataMap.get("Name"));
+
                 }
                 Map<String, String> portsNicknames = new HashMap<>();
-                for (Map.Entry<String, ?> ports: portDataMap.entrySet()){
-                    if (ports.getValue() instanceof LinkedTreeMap){ // Check if port value is actually a map with nickname
+                for (Map.Entry<String, ?> ports : portDataMap.entrySet()) {
+                    if (ports.getValue() instanceof LinkedTreeMap) { // Check if port value is actually a map with nickname
                         @SuppressWarnings("unchecked")
                         Map<String, String> valueMap = (Map<String, String>) ports.getValue();
+
                         if (valueMap.containsKey("Name") && !valueMap.get("Name").isBlank()){
                             String nickName = valueMap.get("Name");
                             String errorMessage = String.format(
@@ -81,10 +85,11 @@ public class RobotSensorsData implements Cloneable {
                                 throw new Exception(errorMessage);
                             }
                             portsNicknames.put(fixName(ports.getKey()), nickName);
+
                         }
                     }
                 }
-                indexToPortsNicknames.put("_" + (i+1), portsNicknames);
+                indexToPortsNicknames.put("_" + (i + 1), portsNicknames);
             }
             boardNicknamesMap.put(boardName, indexNicknames);
             portNicknamesMap.put(boardName, indexToPortsNicknames);
@@ -111,7 +116,7 @@ public class RobotSensorsData implements Cloneable {
                             setPortValue(boardName, boardIndex.getKey(), portAndValue.getKey(), portAndValue.getValue());
                             if (portNicknamesMap.containsKey(boardName)
                                     && portNicknamesMap.get(boardName).containsKey(boardIndex.getKey())
-                                    && portNicknamesMap.get(boardName).get(boardIndex.getKey()).containsKey(portAndValue.getKey())){
+                                    && portNicknamesMap.get(boardName).get(boardIndex.getKey()).containsKey(portAndValue.getKey())) {
                                 String nickname = portNicknamesMap.get(boardName).get(boardIndex.getKey()).get(portAndValue.getKey());
                                 setPortValue(boardName, boardIndex.getKey(), nickname, portAndValue.getValue());
                             }
@@ -157,7 +162,7 @@ public class RobotSensorsData implements Cloneable {
                             boardsMap.get(entryInBoard.getKey()).remove(port);
                             if (portNicknamesMap.containsKey(entry.getKey())
                                     && portNicknamesMap.get(entry.getKey()).containsKey(entryInBoard.getKey())
-                                    && portNicknamesMap.get(entry.getKey()).get(entryInBoard.getKey()).containsKey(port)){
+                                    && portNicknamesMap.get(entry.getKey()).get(entryInBoard.getKey()).containsKey(port)) {
                                 boardsMap.get(entryInBoard.getKey()).remove(
                                         portNicknamesMap.get(entry.getKey()).get(entryInBoard.getKey()).get(port)
                                 );
@@ -207,7 +212,7 @@ public class RobotSensorsData implements Cloneable {
         return data;
     }
 
-    private synchronized void addNicknamesToPortsMap(){
+    private synchronized void addNicknamesToPortsMap() {
         Map<String, Map<String, Map<String, Double>>> updatedPortsMap = new HashMap<>();
         portsMap.forEach((boardName, indexes) -> {
             boolean indexesHaveNicknames = boardNicknamesMap.containsKey(boardName);
@@ -219,7 +224,7 @@ public class RobotSensorsData implements Cloneable {
                 Map<String, Double> portValueMap = new HashMap<>();
                 ports.forEach((port, value) -> {
                     portValueMap.put(port, value);
-                    if (indexPortsHaveNicknames && portNicknamesMap.get(boardName).get(index).containsKey(port)){
+                    if (indexPortsHaveNicknames && portNicknamesMap.get(boardName).get(index).containsKey(port)) {
                         String nickname = portNicknamesMap.get(boardName).get(index).getOrDefault(port, null);
                         portValueMap.put(portNicknamesMap.get(boardName).get(index).get(port), value);
                     }
