@@ -167,6 +167,23 @@ public class RobotSensorsData implements Cloneable {
                             updated = true;
                         }
                     }
+                    if (boardNicknamesMap.containsKey(boardName)
+                            && boardNicknamesMap.get(boardName).containsKey(boardIndex.getKey())){
+                        String indexNickname = boardNicknamesMap.get(boardName).get(boardIndex.getKey());
+
+                        if (portsMap.get(boardName).containsKey(indexNickname)) {
+                            for (Map.Entry<String, Double> portAndValue : boardIndex.getValue().entrySet()) {
+                                setPortValue(boardName, indexNickname, portAndValue.getKey(), portAndValue.getValue());
+                                if (portNicknamesMap.containsKey(boardName)
+                                        && portNicknamesMap.get(boardName).containsKey(boardIndex.getKey())
+                                        && portNicknamesMap.get(boardName).get(boardIndex.getKey()).containsKey(portAndValue.getKey())) {
+                                    String nickname = portNicknamesMap.get(boardName).get(boardIndex.getKey()).get(portAndValue.getKey());
+                                    setPortValue(boardName, indexNickname, nickname, portAndValue.getValue());
+                                }
+                                updated = true;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -244,8 +261,8 @@ public class RobotSensorsData implements Cloneable {
                         if (portNicknamesMap.get((String) key).get("_1").containsKey(fixName(port))){
                             portMap.putIfAbsent(portNicknamesMap.get((String) key).get("_1").get(fixName(port)), null);
                         }
-                        if (boardNicknamesMap.get((String) key).containsValue(fixName(port))){
-                            portMap.putIfAbsent(getKeyByValue(boardNicknamesMap.get((String) key), fixName(port)), null);
+                        if (portNicknamesMap.get((String) key).get("_1").containsValue(fixName(port))){
+                            portMap.putIfAbsent(getKeyByValue(portNicknamesMap.get((String) key).get("_1"), fixName(port)), null);
                         }
                     }
                 });
@@ -388,11 +405,12 @@ public class RobotSensorsData implements Cloneable {
     }
 
     private String getKeyByValue(Map<String, String> map, String value){
-        return map.entrySet().stream()
-                .filter(entry -> entry.getValue().equals(value))
-                .findFirst()
-                .orElseThrow()
-                .getKey();
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            if (entry.getValue().equals(value)){
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 //    {"Ev3":{"1":["2"],"2":["3"]},"GrovePi":["D3"]}
 
