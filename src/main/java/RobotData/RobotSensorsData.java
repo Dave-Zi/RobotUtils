@@ -91,6 +91,55 @@ public class RobotSensorsData implements Cloneable {
         }
     }
 
+    public String replaceNicksInJson(String json) {
+        Map<String, Map<String, ArrayList<String>>> newJson = new HashMap<>();
+        Gson gson = new Gson();
+        Map<?, ?> element = gson.fromJson(json, Map.class); // json String to Map
+
+        for (Object key : element.keySet()) { // Iterate over board types
+            String boardType = (String) key;
+            newJson.put(boardType, new HashMap<>()); // Add board name to map
+            Object value = element.get(key);
+
+            // Check if board contains map of boards or list of ports
+            // board in json might have mapping of a number of boards of its type
+            // or list of ports that will be treated as if there's only one board of this type
+            if (value instanceof ArrayList) { // If board has list of ports.
+
+                @SuppressWarnings("unchecked")
+                ArrayList<String> ports = (ArrayList<String>) value;
+                ArrayList<String> portsArray = new ArrayList<>();
+                Map<String, String> portsNicksMap = portNicknamesMap.get(boardType).get("_1");
+                ports.forEach(port -> portsArray.add(
+                        portsNicksMap.containsValue(port) ?
+                                getKeyByValue(portsNicksMap, port) : port));
+
+                newJson.get(boardType).put("_1", portsArray); // Index of the first board of this type is _1
+
+            } else if (value instanceof LinkedTreeMap) { // If board has map boards of this type
+                @SuppressWarnings("unchecked")
+                Map<String, List<String>> valueMapped = (Map<String, List<String>>) value; // Map of boards to ports list
+                for (Map.Entry<String, List<String>> intAndList : valueMapped.entrySet()) {
+
+                    ArrayList<String> portList = new ArrayList<>(intAndList.getValue());
+                    String boardIndex = boardNicknamesMap
+                            .get(boardType)
+                            .containsValue(fixName(intAndList.getKey())) ?
+                            getKeyByValue(boardNicknamesMap.get(boardType), fixName(intAndList.getKey()))
+                            : fixName(intAndList.getKey());
+
+                    ArrayList<String> portsArray = new ArrayList<>();
+                    Map<String, String> portsNicksMap = portNicknamesMap.get(boardType).get(boardIndex);
+                    portList.forEach(port -> portsArray.add(
+                            portsNicksMap.containsValue(port) ?
+                                    getKeyByValue(portsNicksMap, port) : port));
+                    newJson.get(boardType).put(boardIndex, portsArray);
+                }
+            }
+        }
+        return new GsonBuilder().create().toJson(newJson);
+    }
+
     public String toJson() {
         updated = false;
         return new GsonBuilder().create().toJson(portsMap);
@@ -188,9 +237,18 @@ public class RobotSensorsData implements Cloneable {
                 @SuppressWarnings("unchecked")
                 ArrayList<String> ports = (ArrayList<String>) value;
                 Map<String, Double> portMap = new HashMap<>();
-                ports.forEach(port -> portMap.put(fixName(port), null));
+                ports.forEach(port -> {
+                    portMap.put(fixName(port), null);
+                    if (portNicknamesMap.containsKey((String) key)
+                            && portNicknamesMap.get((String) key).containsKey("_1")
+                            && portNicknamesMap.get((String) key).get("_1").containsKey(fixName(port))){
+                        portMap.put(portNicknamesMap.get((String) key).get("_1").get(fixName(port)), null);
+                    }
+                });
                 data.get(key).put("_1", portMap); // Index of the first board of this type is _1
-
+                if (boardNicknamesMap.containsKey((String) key) && boardNicknamesMap.get((String) key).containsKey("_1")){
+                    data.get(key).put(boardNicknamesMap.get((String) key).get("_1"), portMap); // Index of the first board of this type is _1
+                }
             } else if (value instanceof LinkedTreeMap) { // If board has map boards of this type
                 @SuppressWarnings("unchecked")
                 Map<String, List<String>> valueMapped = (Map<String, List<String>>) value; // Map of boards to ports list
@@ -199,8 +257,18 @@ public class RobotSensorsData implements Cloneable {
                     Set<String> portList = new HashSet<>(intAndList.getValue());
 
                     Map<String, Double> portMap = new HashMap<>();
-                    portList.forEach(port -> portMap.put(fixName(port), null));
+                    portList.forEach(port -> {
+                        portMap.put(fixName(port), null);
+                        if (portNicknamesMap.containsKey((String) key)
+                                && portNicknamesMap.get((String) key).containsKey(fixName(intAndList.getKey()))
+                                && portNicknamesMap.get((String) key).get(fixName(intAndList.getKey())).containsKey(fixName(port))){
+                            portMap.put(portNicknamesMap.get((String) key).get(fixName(intAndList.getKey())).get(fixName(port)), null);
+                        }
+                    });
                     data.get(key).put(fixName(intAndList.getKey()), portMap);
+                    if (boardNicknamesMap.containsKey((String) key) && boardNicknamesMap.get((String) key).containsKey(fixName(intAndList.getKey()))){
+                        data.get(key).put(boardNicknamesMap.get((String) key).get(fixName(intAndList.getKey())), portMap); // Index of the first board of this type is _1
+                    }
                 }
             }
         }
@@ -295,6 +363,14 @@ public class RobotSensorsData implements Cloneable {
 
     public Map<String, Map<String, Map<String, Double>>> getPortsMap() {
         return portsMap;
+    }
+
+    private String getKeyByValue(Map<String, String> map, String value){
+        return map.entrySet().stream()
+                .filter(entry -> entry.getValue().equals(value))
+                .findFirst()
+                .orElseThrow()
+                .getKey();
     }
 //    {"Ev3":{"1":["2"],"2":["3"]},"GrovePi":["D3"]}
 
