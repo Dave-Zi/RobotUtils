@@ -77,7 +77,7 @@ public class RobotSensorsDataTest {
                 "            }";
 
         robotSensorsData.buildNicknameMaps(dataWithNicknames);
-        String dataToAdd = "{\"EV3\": {\"EV3_1\": [\"_3\",\"_5\" ],\"_2\" : [\"_3\", \"4\"]},\"GrovePi\": {\"_2\": [\"D2\"]}}";
+        String dataToAdd = "{\"EV3\": {\"EV3_1\": [\"3\",\"5\" ],\"2\" : [\"3\", \"4\"]},\"GrovePi\": {\"2\": [\"D2\"]}}";
 
         robotSensorsData.addToBoardsMap(dataToAdd);
         // values are null before we update
@@ -131,10 +131,10 @@ public class RobotSensorsDataTest {
         Map<String, Map<String, String>> boardNicknamesMap_expected = new HashMap<>();
 
         Map<String, String> expected = new HashMap<>();
-        expected.put("_1", "EV3_1");
+        expected.put("1", "EV3_1");
         boardNicknamesMap_expected.put("EV3", expected);
         expected = new HashMap<>();
-        expected.put("_1", "myGrovePi");
+        expected.put("1", "myGrovePi");
         boardNicknamesMap_expected.put("GrovePi", expected);
 
         assertEquals(boardNicknamesMap_expected, boardNicknamesMap_actual);
@@ -147,13 +147,13 @@ public class RobotSensorsDataTest {
         expected.put("D2", "MyLed");
         expected.put("D4", "UV");
         Map<String, Map<String, String>> boardPorts = new HashMap<>();
-        boardPorts.put("_1", expected);
+        boardPorts.put("1", expected);
         portNicknamesMap_expected.put("GrovePi", boardPorts);
 
         expected = new HashMap<>();
-        expected.put("_2", "UV3");
+        expected.put("2", "UV3");
         boardPorts = new HashMap<>();
-        boardPorts.put("_1", expected);
+        boardPorts.put("1", expected);
         portNicknamesMap_expected.put("EV3", boardPorts);
 
         assertEquals(portNicknamesMap_expected, portNicknamesMap_actual);
@@ -195,7 +195,7 @@ public class RobotSensorsDataTest {
 
         robotSensorsData.buildNicknameMaps(dataWithNicknames);
 
-        String dataToAdd = "{\"EV3\": {\"EV3_1\": [\"A\"],\"_2\" : [\"B\"], \"_3\": [\"4\"]},\"GrovePi\": {\"myGrovePi\": [\"D1\"], \"_2\": [\"D1\"]}}";
+        String dataToAdd = "{\"EV3\": {\"EV3_1\": [\"A\"],\"2\" : [\"B\"], \"3\": [\"4\"]},\"GrovePi\": {\"myGrovePi\": [\"D1\"], \"2\": [\"D1\"]}}";
 
         robotSensorsData.addToBoardsMap(dataToAdd);
 
@@ -521,41 +521,42 @@ public class RobotSensorsDataTest {
     }
 
     String[] testCasesForReplaceNicksInJsonTest = {
-            "{\"EV3\":[\"NickA\"]}", "{\"EV3\":{\"_1\":[\"A\"]}}",
-            "{\"EV3\":[\"NickB\"]}", "{\"EV3\":{\"_1\":[\"B\"]}}",
-            "{\"EV3\":[\"NickA\",\"NickB\"]}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
-            "{\"EV3\":[\"NickB\",\"NickA\"]}", "{\"EV3\":{\"_1\":[\"B\",\"A\"]}}",
-            "{\"EV3\":{\"_1\":[\"A\"]}}", "{\"EV3\":{\"_1\":[\"A\"]}}",
-            "{\"EV3\":{\"_1\":[\"B\"]}}", "{\"EV3\":{\"_1\":[\"B\"]}}",
-            "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
-            "{\"EV3\":{\"_1\":[\"NickA\"]}}", "{\"EV3\":{\"_1\":[\"A\"]}}",
-            "{\"EV3\":{\"_1\":[\"NickB\"]}}", "{\"EV3\":{\"_1\":[\"B\"]}}",
-            "{\"EV3\":{\"_1\":[\"NickA\",\"B\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
-            "{\"EV3\":{\"_1\":[\"A\",\"NickB\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
-            "{\"EV3\":{\"_1\":[\"NickA\",\"NickB\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
-            "{\"EV3\":{\"Nick1\":[\"A\"]}}", "{\"EV3\":{\"_1\":[\"A\"]}}",
-            "{\"EV3\":{\"Nick1\":[\"B\"]}}", "{\"EV3\":{\"_1\":[\"B\"]}}",
-            "{\"EV3\":{\"Nick1\":[\"A\",\"B\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
-            "{\"EV3\":{\"Nick1\":[\"NickA\"]}}", "{\"EV3\":{\"_1\":[\"A\"]}}",
-            "{\"EV3\":{\"Nick1\":[\"NickB\"]}}", "{\"EV3\":{\"_1\":[\"B\"]}}",
-            "{\"EV3\":{\"Nick1\":[\"NickA\",\"B\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
-            "{\"EV3\":{\"Nick1\":[\"A\",\"NickB\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
-            "{\"EV3\":{\"Nick1\":[\"NickA\",\"NickB\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
-            "{\"EV3\":{\"Nick1\":[\"A\",\"HAHAHA\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"HAHAHA\"]}}",
-            "{\"EV3\":{\"Nick1\":[\"HAHAHA\",\"NickA\"]}}", "{\"EV3\":{\"_1\":[\"HAHAHA\",\"A\"]}}",
-            "{\"EV3\":{\"Nick1\":[\"NickA\",\"HAHAHA\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"HAHAHA\"]}}",
-            "{\"EV3\":{\"Nick1\":{\"NickA\":50,\"HAHAHA\":60}}}", "{\"EV3\":{\"_1\":{\"A\":50.0,\"HAHAHA\":60.0}}}",
-            "{\"EV3\":{\"_1\":{\"NickA\":50.1,\"HAHAHA\":60.0,\"B\":70.0}}}", "{\"EV3\":{\"_1\":{\"A\":50.1,\"B\":70.0,\"HAHAHA\":60.0}}}",
-            "{\"EV3\":{\"_1\":{\"NickA\":50.2,\"HAHAHA\":60.0,\"NickB\":70.0}}}", "{\"EV3\":{\"_1\":{\"A\":50.2,\"B\":70.0,\"HAHAHA\":60.0}}}",
-            "{\"EV3\":{\"_1\":{\"A\":50.0,\"NickB\":70.0,\"HAHAHA\":60.0}}}", "{\"EV3\":{\"_1\":{\"A\":50.0,\"B\":70.0,\"HAHAHA\":60.0}}}",
-            "{\"EV3\":{\"_1\":{}}}", "{\"EV3\":{\"_1\":{}}}",
-            "{\"EV3\":{\"Nick1\":{}}}", "{\"EV3\":{\"_1\":{}}}",
-            "{\"EV3\":{\"_1\":[]}}", "{\"EV3\":{\"_1\":[]}}",
-            "{\"EV3\":{\"Nick1\":[]}}", "{\"EV3\":{\"_1\":[]}}",
+            "{\"EV3\":[\"NickA\"]}", "{\"EV3\":{\"1\":[\"A\"]}}",
+            "{\"EV3\":[\"NickA\"]}", "{\"EV3\":{\"1\":[\"A\"]}}",
+            "{\"EV3\":[\"NickB\"]}", "{\"EV3\":{\"1\":[\"B\"]}}",
+            "{\"EV3\":[\"NickA\",\"NickB\"]}", "{\"EV3\":{\"1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":[\"NickB\",\"NickA\"]}", "{\"EV3\":{\"1\":[\"B\",\"A\"]}}",
+            "{\"EV3\":{\"1\":[\"A\"]}}", "{\"EV3\":{\"1\":[\"A\"]}}",
+            "{\"EV3\":{\"1\":[\"B\"]}}", "{\"EV3\":{\"1\":[\"B\"]}}",
+            "{\"EV3\":{\"1\":[\"A\",\"B\"]}}", "{\"EV3\":{\"1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"1\":[\"NickA\"]}}", "{\"EV3\":{\"1\":[\"A\"]}}",
+            "{\"EV3\":{\"1\":[\"NickB\"]}}", "{\"EV3\":{\"1\":[\"B\"]}}",
+            "{\"EV3\":{\"1\":[\"NickA\",\"B\"]}}", "{\"EV3\":{\"1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"1\":[\"A\",\"NickB\"]}}", "{\"EV3\":{\"1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"1\":[\"NickA\",\"NickB\"]}}", "{\"EV3\":{\"1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"A\"]}}", "{\"EV3\":{\"1\":[\"A\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"B\"]}}", "{\"EV3\":{\"1\":[\"B\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"A\",\"B\"]}}", "{\"EV3\":{\"1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"NickA\"]}}", "{\"EV3\":{\"1\":[\"A\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"NickB\"]}}", "{\"EV3\":{\"1\":[\"B\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"NickA\",\"B\"]}}", "{\"EV3\":{\"1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"A\",\"NickB\"]}}", "{\"EV3\":{\"1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"NickA\",\"NickB\"]}}", "{\"EV3\":{\"1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"A\",\"HAHAHA\"]}}", "{\"EV3\":{\"1\":[\"A\",\"HAHAHA\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"HAHAHA\",\"NickA\"]}}", "{\"EV3\":{\"1\":[\"HAHAHA\",\"A\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"NickA\",\"HAHAHA\"]}}", "{\"EV3\":{\"1\":[\"A\",\"HAHAHA\"]}}",
+            "{\"EV3\":{\"Nick1\":{\"NickA\":50,\"HAHAHA\":60}}}", "{\"EV3\":{\"1\":{\"A\":50.0,\"HAHAHA\":60.0}}}",
+            "{\"EV3\":{\"1\":{\"NickA\":50.1,\"HAHAHA\":60.0,\"B\":70.0}}}", "{\"EV3\":{\"1\":{\"A\":50.1,\"B\":70.0,\"HAHAHA\":60.0}}}",
+            "{\"EV3\":{\"1\":{\"NickA\":50.2,\"HAHAHA\":60.0,\"NickB\":70.0}}}", "{\"EV3\":{\"1\":{\"A\":50.2,\"B\":70.0,\"HAHAHA\":60.0}}}",
+            "{\"EV3\":{\"1\":{\"A\":50.0,\"NickB\":70.0,\"HAHAHA\":60.0}}}", "{\"EV3\":{\"1\":{\"A\":50.0,\"B\":70.0,\"HAHAHA\":60.0}}}",
+            "{\"EV3\":{\"1\":{}}}", "{\"EV3\":{\"1\":{}}}",
+            "{\"EV3\":{\"Nick1\":{}}}", "{\"EV3\":{\"1\":{}}}",
+            "{\"EV3\":{\"1\":[]}}", "{\"EV3\":{\"1\":[]}}",
+            "{\"EV3\":{\"Nick1\":[]}}", "{\"EV3\":{\"1\":[]}}",
             "{\"EV3\":{}}", "{\"EV3\":{}}",
-            "{\"EV3\":{\"B\":70.0,\"C\":50.0,\"speed\":15.0}}","{\"EV3\":{\"_1\":{\"B\":70.0,\"C\":50.0,\"speed\":15.0}}}",
-            "{\"EV3\":{\"NickB\":70.0,\"C\":50.0,\"speed\":15.0}}","{\"EV3\":{\"_1\":{\"B\":70.0,\"C\":50.0,\"speed\":15.0}}}",
-            "{\"EV3\":{\"NickB\":70.0,\"NickA\":50.0,\"speed\":15.0}}","{\"EV3\":{\"_1\":{\"A\":50.0,\"B\":70.0,\"speed\":15.0}}}",
+            "{\"EV3\":{\"B\":70.0,\"C\":50.0,\"speed\":15.0}}","{\"EV3\":{\"1\":{\"B\":70.0,\"C\":50.0,\"speed\":15.0}}}",
+            "{\"EV3\":{\"NickB\":70.0,\"C\":50.0,\"speed\":15.0}}","{\"EV3\":{\"1\":{\"B\":70.0,\"C\":50.0,\"speed\":15.0}}}",
+            "{\"EV3\":{\"NickB\":70.0,\"NickA\":50.0,\"speed\":15.0}}","{\"EV3\":{\"1\":{\"A\":50.0,\"B\":70.0,\"speed\":15.0}}}",
     };
 
 }
