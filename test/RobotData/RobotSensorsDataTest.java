@@ -14,7 +14,13 @@ import static org.junit.Assert.*;
 
 public class RobotSensorsDataTest {
 
-    private RobotSensorsData robotSensorsData;
+    private RobotSensorsData robotSensorsData = new RobotSensorsData();
+    //  private Map<String, Map<String, Map<String, Double>>> mapToCompare = new HashMap<>();
+    private Map<String, Double> grovePiInsideMap = new HashMap<>();
+    private Map<String, Map<String, Double>> grovePiMap = new HashMap<>();
+    private Map<String, Double> ev3InsideMap1 = new HashMap<>();
+    private Map<String, Map<String, Double>> ev3Map = new HashMap<>();
+    private Map<String, Double> ev3InsideMap2 = new HashMap<>();
 
 
     @Before
@@ -71,34 +77,28 @@ public class RobotSensorsDataTest {
                 "            }";
 
         robotSensorsData.buildNicknameMaps(dataWithNicknames);
-        String dataToAdd = "{\"EV3\": {\"EV3_1\": [\"UV3\",\"5\" ],\"_2\" : [\"UV_22\", \"4\"]},\"GrovePi\": {\"myGrovePi\": [\"MyLed\", \"Led2\"], \"_2\": [\"UV234\"]}}";
+        String dataToAdd = "{\"EV3\": {\"EV3_1\": [\"_3\",\"_5\" ],\"_2\" : [\"_3\", \"4\"]},\"GrovePi\": {\"_2\": [\"D2\"]}}";
 
         robotSensorsData.addToBoardsMap(dataToAdd);
         // values are null before we update
         assertNull(robotSensorsData.getPortsAndValues("EV3", "_1").get("_5"));
-        assertNull(robotSensorsData.getPortsAndValues("EV3", "EV3_1").get("_5"));
 
-        assertNull(robotSensorsData.getPortsAndValues("EV3", "_2").get("UV_22"));
         assertNull(robotSensorsData.getPortsAndValues("EV3", "_2").get("_3"));
 
-        assertNull(robotSensorsData.getPortsAndValues("GrovePi", "_2").get("MyLed"));
         assertNull(robotSensorsData.getPortsAndValues("GrovePi", "_2").get("D2"));
-        assertNull(robotSensorsData.getPortsAndValues("GrovePi", "myGrovePi").get("MyLed"));
-        assertNull(robotSensorsData.getPortsAndValues("GrovePi", "myGrovePi").get("D2"));
 
-        String dataForUpdate = "{\"EV3\": {\"EV3_1\": {\"_5\" : 10}, \"_2\" : {\"UV_22\" : 122}}, \"GrovePi\": {\"myGrovePi\": {\"MyLed\" : 57}}}";
+        String dataForUpdate = "{\"EV3\": {\"_1\": {\"_5\" : 10}, \"_2\" : {\"_3\" : 122}}, \"GrovePi\": {\"_2\": {\"D2\" : 57}}}";
         robotSensorsData.updateBoardMapValues(dataForUpdate);
         // has value after update
         assertEquals((Double) 10.0,robotSensorsData.getPortsAndValues("EV3", "_1").get("_5"));
-        assertEquals((Double) 10.0,robotSensorsData.getPortsAndValues("EV3", "EV3_1").get("_5"));
 
-        assertEquals((Double) 122.0,robotSensorsData.getPortsAndValues("EV3", "_2").get("UV_22"));
-        //assertEquals((Double) 122.0,robotSensorsData.getPortsAndValues("EV3", "_2").get("_3"));
+        assertEquals((Double) 122.0,robotSensorsData.getPortsAndValues("EV3", "_2").get("_3"));
 
-        assertEquals((Double) 57.0,robotSensorsData.getPortsAndValues("GrovePi", "_2").get("MyLed"));
         assertEquals((Double) 57.0,robotSensorsData.getPortsAndValues("GrovePi", "_2").get("D2"));
-        assertEquals((Double) 57.0,robotSensorsData.getPortsAndValues("GrovePi", "myGrovePi").get("MyLed"));
-        assertEquals((Double) 57.0,robotSensorsData.getPortsAndValues("GrovePi", "myGrovePi").get("D2"));
+
+        assertNull(robotSensorsData.getPortsAndValues("EV3", "_1").get("_3"));
+
+        assertNull(robotSensorsData.getPortsAndValues("EV3", "_2").get("_4"));
     }
 
 
@@ -500,4 +500,59 @@ public class RobotSensorsDataTest {
         expected.add("D4");
         assertEquals(expected, robotSensorsData.getPorts("GrovePi", "_2"));
     }
+
+    @Test
+    public void replaceNicksInJsonTest() {
+
+        String buildDataWithNicknames = "{\n" +
+                "                \"EV3\":\n" +
+                "                    [{\n" +
+                "                        \"Name\": \"Nick1\",\n" +
+                "                        \"Port\": \"rfcomm0\",\n" +
+                "                        \"A\": {\"Name\": \"NickA\"},\n" +
+                "                        \"B\": {\"Name\": \"NickB\"}\n" +
+                "                    }]\n" +
+                "            }";
+        robotSensorsData.buildNicknameMaps(buildDataWithNicknames);
+        String[] testCases = testCasesForReplaceNicksInJsonTest;
+        for (int i = 0; i < testCases.length; i += 2) {
+            assertEquals(String.format("Input :%s\n",testCases[i]), testCases[i+1], robotSensorsData.replaceNicksInJson(testCases[i]));
+        }
+    }
+
+    String[] testCasesForReplaceNicksInJsonTest = {
+            "{\"EV3\":[\"NickA\"]}", "{\"EV3\":{\"_1\":[\"A\"]}}",
+            "{\"EV3\":[\"NickB\"]}", "{\"EV3\":{\"_1\":[\"B\"]}}",
+            "{\"EV3\":[\"NickA\",\"NickB\"]}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":[\"NickB\",\"NickA\"]}", "{\"EV3\":{\"_1\":[\"B\",\"A\"]}}",
+            "{\"EV3\":{\"_1\":[\"A\"]}}", "{\"EV3\":{\"_1\":[\"A\"]}}",
+            "{\"EV3\":{\"_1\":[\"B\"]}}", "{\"EV3\":{\"_1\":[\"B\"]}}",
+            "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"_1\":[\"NickA\"]}}", "{\"EV3\":{\"_1\":[\"A\"]}}",
+            "{\"EV3\":{\"_1\":[\"NickB\"]}}", "{\"EV3\":{\"_1\":[\"B\"]}}",
+            "{\"EV3\":{\"_1\":[\"NickA\",\"B\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"_1\":[\"A\",\"NickB\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"_1\":[\"NickA\",\"NickB\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"A\"]}}", "{\"EV3\":{\"_1\":[\"A\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"B\"]}}", "{\"EV3\":{\"_1\":[\"B\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"A\",\"B\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"NickA\"]}}", "{\"EV3\":{\"_1\":[\"A\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"NickB\"]}}", "{\"EV3\":{\"_1\":[\"B\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"NickA\",\"B\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"A\",\"NickB\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"NickA\",\"NickB\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"B\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"A\",\"HAHAHA\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"HAHAHA\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"HAHAHA\",\"NickA\"]}}", "{\"EV3\":{\"_1\":[\"HAHAHA\",\"A\"]}}",
+            "{\"EV3\":{\"Nick1\":[\"NickA\",\"HAHAHA\"]}}", "{\"EV3\":{\"_1\":[\"A\",\"HAHAHA\"]}}",
+            "{\"EV3\":{\"Nick1\":{\"NickA\":50,\"HAHAHA\":60}}}", "{\"EV3\":{\"_1\":{\"A\":50.0,\"HAHAHA\":60.0}}}",
+            "{\"EV3\":{\"_1\":{\"NickA\":50.1,\"HAHAHA\":60.0,\"B\":70.0}}}", "{\"EV3\":{\"_1\":{\"A\":50.1,\"B\":70.0,\"HAHAHA\":60.0}}}",
+            "{\"EV3\":{\"_1\":{\"NickA\":50.2,\"HAHAHA\":60.0,\"NickB\":70.0}}}", "{\"EV3\":{\"_1\":{\"A\":50.2,\"B\":70.0,\"HAHAHA\":60.0}}}",
+            "{\"EV3\":{\"_1\":{\"A\":50.0,\"NickB\":70.0,\"HAHAHA\":60.0}}}", "{\"EV3\":{\"_1\":{\"A\":50.0,\"B\":70.0,\"HAHAHA\":60.0}}}",
+            "{\"EV3\":{\"_1\":{}}}", "{\"EV3\":{\"_1\":{}}}",
+            "{\"EV3\":{\"Nick1\":{}}}", "{\"EV3\":{\"_1\":{}}}",
+            "{\"EV3\":{\"_1\":[]}}", "{\"EV3\":{\"_1\":[]}}",
+            "{\"EV3\":{\"Nick1\":[]}}", "{\"EV3\":{\"_1\":[]}}",
+            "{\"EV3\":{}}", "{\"EV3\":{}}",
+    };
+
 }

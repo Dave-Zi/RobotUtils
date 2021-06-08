@@ -62,7 +62,9 @@ public class RobotSensorsData implements Cloneable {
                         logger.log(Level.SEVERE, errorMessage);
                         throw new IllegalArgumentException(errorMessage);
                     }
-                    indexNicknames.put("_" + (i + 1), (String) portDataMap.get("Name"));
+                    checkNickname(nickName);
+
+                    indexNicknames.put("_" + (i+1), (String) portDataMap.get("Name"));
                 }
                 Map<String, String> portsNicknames = new HashMap<>();
                 for (Map.Entry<String, ?> ports : portDataMap.entrySet()) {
@@ -80,6 +82,11 @@ public class RobotSensorsData implements Cloneable {
                                 logger.log(Level.SEVERE, errorMessage);
                                 throw new IllegalArgumentException(errorMessage);
                             }
+                            checkNickname(nickName);
+                            if (nickName.equals("speed")){
+                                logger.log(Level.SEVERE, "Port cannot be named speed");
+                                throw new IllegalArgumentException("Port cannot be named speed");
+                            }
                             portsNicknames.put(fixName(ports.getKey()), nickName);
                         }
                     }
@@ -92,7 +99,7 @@ public class RobotSensorsData implements Cloneable {
     }
 
     public String replaceNicksInJson(String json) {
-        Map<String, Map<String, ArrayList<String>>> newJson = new HashMap<>();
+        Map<String, Map<String, Object>> newJson = new HashMap<>();
         Gson gson = new Gson();
         Map<?, ?> element = gson.fromJson(json, Map.class); // json String to Map
 
@@ -118,22 +125,49 @@ public class RobotSensorsData implements Cloneable {
 
             } else if (value instanceof LinkedTreeMap) { // If board has map boards of this type
                 @SuppressWarnings("unchecked")
-                Map<String, List<String>> valueMapped = (Map<String, List<String>>) value; // Map of boards to ports list
-                for (Map.Entry<String, List<String>> intAndList : valueMapped.entrySet()) {
+                LinkedTreeMap<Object, Object> valueObject = (LinkedTreeMap<Object, Object>) value; // Map of boards to ports list
+                Optional<Object> firstValue = valueObject.values().stream().findFirst();
+                if (firstValue.isEmpty()){
+                    continue;
+                }
+                Object realFirstValue = firstValue.get();
+                if (realFirstValue instanceof  ArrayList){
+                    @SuppressWarnings("unchecked")
+                    Map<String, List<String>> valueMapped = (Map<String, List<String>>) value; // Map of boards to ports list
+                    for (Map.Entry<String, List<String>> intAndList : valueMapped.entrySet()) {
 
-                    ArrayList<String> portList = new ArrayList<>(intAndList.getValue());
-                    String boardIndex = boardNicknamesMap
-                            .get(boardType)
-                            .containsValue(fixName(intAndList.getKey())) ?
-                            getKeyByValue(boardNicknamesMap.get(boardType), fixName(intAndList.getKey()))
-                            : fixName(intAndList.getKey());
+                        ArrayList<String> portList = new ArrayList<>(intAndList.getValue());
+                        String boardIndex = boardNicknamesMap
+                                .get(boardType)
+                                .containsValue(fixName(intAndList.getKey())) ?
+                                getKeyByValue(boardNicknamesMap.get(boardType), fixName(intAndList.getKey()))
+                                : fixName(intAndList.getKey());
 
-                    ArrayList<String> portsArray = new ArrayList<>();
-                    Map<String, String> portsNicksMap = portNicknamesMap.get(boardType).get(boardIndex);
-                    portList.forEach(port -> portsArray.add(
-                            portsNicksMap.containsValue(port) ?
-                                    getKeyByValue(portsNicksMap, port) : port));
-                    newJson.get(boardType).put(boardIndex, portsArray);
+                        ArrayList<String> portsArray = new ArrayList<>();
+                        Map<String, String> portsNicksMap = portNicknamesMap.get(boardType).get(boardIndex);
+                        portList.forEach(port -> portsArray.add(
+                                portsNicksMap.containsValue(port) ?
+                                        getKeyByValue(portsNicksMap, port) : port));
+                        newJson.get(boardType).put(boardIndex, portsArray);
+                    }
+                } else if (realFirstValue instanceof LinkedTreeMap){
+                    @SuppressWarnings("unchecked")
+                    Map<String, Map<String, Object>> valueMapped = (Map<String, Map<String, Object>>) value; // Map of boards to ports list
+                    for (Map.Entry<String, Map<String, Object>> intAndMap : valueMapped.entrySet()) {
+
+                        String boardIndex = boardNicknamesMap
+                                .get(boardType)
+                                .containsValue(fixName(intAndMap.getKey())) ?
+                                getKeyByValue(boardNicknamesMap.get(boardType), fixName(intAndMap.getKey()))
+                                : fixName(intAndMap.getKey());
+
+                        Map<String, Object> newPortMap = new HashMap<>();
+                        Map<String, String> portsNicksMap = portNicknamesMap.get(boardType).get(boardIndex);
+                        intAndMap.getValue().forEach((port, data) -> newPortMap.put(
+                                portsNicksMap.containsValue(port) ?
+                                        getKeyByValue(portsNicksMap, port) : port, data));
+                        newJson.get(boardType).put(boardIndex, newPortMap);
+                    }
                 }
             }
         }
@@ -412,6 +446,19 @@ public class RobotSensorsData implements Cloneable {
         }
         return null;
     }
-//    {"Ev3":{"1":["2"],"2":["3"]},"GrovePi":["D3"]}
+
+    private void checkNickname(String nickName){
+        try {
+            Integer.parseInt(nickName);
+            if (nickName.charAt(0) == '_'){
+                Integer.parseInt(nickName.substring(1));
+            }
+        } catch (NumberFormatException nfe) {
+            return;
+        }
+        String errorMessage = String.format("Board cannot be named like an index - %s", nickName);
+        logger.log(Level.SEVERE, errorMessage);
+        throw new IllegalArgumentException(errorMessage);
+    }
 
 }
