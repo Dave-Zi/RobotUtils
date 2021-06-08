@@ -168,6 +168,16 @@ public class RobotSensorsData implements Cloneable {
                                         getKeyByValue(portsNicksMap, port) : port, data));
                         newJson.get(boardType).put(boardIndex, newPortMap);
                     }
+                } else {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> ports = (Map<String, Object>) value;
+                    Map<String, Object> newPortMap = new HashMap<>();
+                    Map<String, String> portsNicksMap = portNicknamesMap.get(boardType).get("_1");
+                    ports.forEach((port, data) -> newPortMap.put(
+                            portsNicksMap.containsValue(port) ?
+                                    getKeyByValue(portsNicksMap, port) : port, data));
+
+                    newJson.get(boardType).put("_1", newPortMap); // Index of the first board of this type is _1
                 }
             }
         }
