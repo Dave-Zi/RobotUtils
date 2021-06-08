@@ -311,7 +311,7 @@ public class RobotSensorsData implements Cloneable {
                         }
                     }
                 });
-                data.get(key).put("1", portMap); // Index of the first board of this type is 1
+                data.get(key).put("_1", portMap); // Index of the first board of this type is 1
                 if (boardNicknamesMap.containsKey((String) key)) {
                     if (boardNicknamesMap.get((String) key).containsKey("1")) {
                         data.get(key).putIfAbsent(boardNicknamesMap.get((String) key).get("1"), portMap); // Index of the first board of this type is 1
