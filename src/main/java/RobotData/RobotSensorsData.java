@@ -64,7 +64,7 @@ public class RobotSensorsData implements Cloneable {
                     }
                     checkNickname(nickName);
 
-                    indexNicknames.put("_" + (i+1), (String) portDataMap.get("Name"));
+                    indexNicknames.put(String.valueOf(i+1), (String) portDataMap.get("Name"));
                 }
                 Map<String, String> portsNicknames = new HashMap<>();
                 for (Map.Entry<String, ?> ports : portDataMap.entrySet()) {
@@ -87,11 +87,11 @@ public class RobotSensorsData implements Cloneable {
                                 logger.log(Level.SEVERE, "Port cannot be named speed");
                                 throw new IllegalArgumentException("Port cannot be named speed");
                             }
-                            portsNicknames.put(fixName(ports.getKey()), nickName);
+                            portsNicknames.put(ports.getKey(), nickName);
                         }
                     }
                 }
-                indexToPortsNicknames.put("_" + (i + 1), portsNicknames);
+                indexToPortsNicknames.put(String.valueOf(i + 1), portsNicknames);
             }
             boardNicknamesMap.put(boardName, indexNicknames);
             portNicknamesMap.put(boardName, indexToPortsNicknames);
@@ -116,12 +116,12 @@ public class RobotSensorsData implements Cloneable {
                 @SuppressWarnings("unchecked")
                 ArrayList<String> ports = (ArrayList<String>) value;
                 ArrayList<String> portsArray = new ArrayList<>();
-                Map<String, String> portsNicksMap = portNicknamesMap.get(boardType).get("_1");
+                Map<String, String> portsNicksMap = portNicknamesMap.get(boardType).get("1");
                 ports.forEach(port -> portsArray.add(
                         portsNicksMap.containsValue(port) ?
                                 getKeyByValue(portsNicksMap, port) : port));
 
-                newJson.get(boardType).put("_1", portsArray); // Index of the first board of this type is _1
+                newJson.get(boardType).put("1", portsArray); // Index of the first board of this type is 1
 
             } else if (value instanceof LinkedTreeMap) { // If board has map boards of this type
                 @SuppressWarnings("unchecked")
@@ -139,9 +139,9 @@ public class RobotSensorsData implements Cloneable {
                         ArrayList<String> portList = new ArrayList<>(intAndList.getValue());
                         String boardIndex = boardNicknamesMap
                                 .get(boardType)
-                                .containsValue(fixName(intAndList.getKey())) ?
-                                getKeyByValue(boardNicknamesMap.get(boardType), fixName(intAndList.getKey()))
-                                : fixName(intAndList.getKey());
+                                .containsValue(intAndList.getKey()) ?
+                                getKeyByValue(boardNicknamesMap.get(boardType), intAndList.getKey())
+                                : intAndList.getKey();
 
                         ArrayList<String> portsArray = new ArrayList<>();
                         Map<String, String> portsNicksMap = portNicknamesMap.get(boardType).get(boardIndex);
@@ -157,9 +157,9 @@ public class RobotSensorsData implements Cloneable {
 
                         String boardIndex = boardNicknamesMap
                                 .get(boardType)
-                                .containsValue(fixName(intAndMap.getKey())) ?
-                                getKeyByValue(boardNicknamesMap.get(boardType), fixName(intAndMap.getKey()))
-                                : fixName(intAndMap.getKey());
+                                .containsValue(intAndMap.getKey()) ?
+                                getKeyByValue(boardNicknamesMap.get(boardType), intAndMap.getKey())
+                                : intAndMap.getKey();
 
                         Map<String, Object> newPortMap = new HashMap<>();
                         Map<String, String> portsNicksMap = portNicknamesMap.get(boardType).get(boardIndex);
@@ -172,12 +172,12 @@ public class RobotSensorsData implements Cloneable {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> ports = (Map<String, Object>) value;
                     Map<String, Object> newPortMap = new HashMap<>();
-                    Map<String, String> portsNicksMap = portNicknamesMap.get(boardType).get("_1");
+                    Map<String, String> portsNicksMap = portNicknamesMap.get(boardType).get("1");
                     ports.forEach((port, data) -> newPortMap.put(
                             portsNicksMap.containsValue(port) ?
                                     getKeyByValue(portsNicksMap, port) : port, data));
 
-                    newJson.get(boardType).put("_1", newPortMap); // Index of the first board of this type is _1
+                    newJson.get(boardType).put("1", newPortMap); // Index of the first board of this type is 1
                 }
             }
         }
@@ -301,19 +301,20 @@ public class RobotSensorsData implements Cloneable {
                 ports.forEach(port -> {
                     portMap.put(fixName(port), null);
                     if (portNicknamesMap.containsKey((String) key)
-                            && portNicknamesMap.get((String) key).containsKey("_1")) {
-                        if (portNicknamesMap.get((String) key).get("_1").containsKey(fixName(port))) {
-                            portMap.putIfAbsent(portNicknamesMap.get((String) key).get("_1").get(fixName(port)), null);
+                            && portNicknamesMap.get((String) key).containsKey("1")) {
+                        if (portNicknamesMap.get((String) key).get("1").containsKey(fixName(port))) {
+                            portMap.putIfAbsent(portNicknamesMap.get((String) key).get("1").get(fixName(port)), null);
                         }
-                        if (portNicknamesMap.get((String) key).get("_1").containsValue(fixName(port))) {
-                            portMap.putIfAbsent(getKeyByValue(portNicknamesMap.get((String) key).get("_1"), fixName(port)), null);
+                        if (portNicknamesMap.get((String) key).get("1").containsValue(fixName(port))) {
+                            String originalKey = getKeyByValue(portNicknamesMap.get((String) key).get("1"), fixName(port));
+                            portMap.putIfAbsent(originalKey != null? fixName(originalKey): null, null);
                         }
                     }
                 });
-                data.get(key).put("_1", portMap); // Index of the first board of this type is _1
+                data.get(key).put("1", portMap); // Index of the first board of this type is 1
                 if (boardNicknamesMap.containsKey((String) key)) {
-                    if (boardNicknamesMap.get((String) key).containsKey("_1")) {
-                        data.get(key).putIfAbsent(boardNicknamesMap.get((String) key).get("_1"), portMap); // Index of the first board of this type is _1
+                    if (boardNicknamesMap.get((String) key).containsKey("1")) {
+                        data.get(key).putIfAbsent(boardNicknamesMap.get((String) key).get("1"), portMap); // Index of the first board of this type is 1
                     }
                 }
             } else if (value instanceof LinkedTreeMap) { // If board has map boards of this type
@@ -338,7 +339,8 @@ public class RobotSensorsData implements Cloneable {
                                     portMap.putIfAbsent(portNicknamesMap.get((String) key).get(realIndex).get(fixName(port)), null);
                                 }
                                 if (portNicknamesMap.get((String) key).get(realIndex).containsValue(fixName(port))) {
-                                    portMap.putIfAbsent(getKeyByValue(portNicknamesMap.get((String) key).get(realIndex), fixName(port)), null);
+                                    String originalKey = getKeyByValue(portNicknamesMap.get((String) key).get(realIndex), fixName(port));
+                                    portMap.putIfAbsent(originalKey != null? fixName(originalKey): null, null);
                                 }
                             }
                         }
@@ -349,7 +351,8 @@ public class RobotSensorsData implements Cloneable {
                             data.get(key).putIfAbsent(boardNicknamesMap.get((String) key).get(fixName(intAndList.getKey())), portMap);
                         }
                         if (boardNicknamesMap.get((String) key).containsValue(fixName(intAndList.getKey()))) {
-                            data.get(key).putIfAbsent(getKeyByValue(boardNicknamesMap.get((String) key), fixName(intAndList.getKey())), portMap);
+                            String originalKey = getKeyByValue(boardNicknamesMap.get((String) key), fixName(intAndList.getKey()));
+                            data.get(key).putIfAbsent(originalKey != null? fixName(originalKey): null, portMap);
                         }
                     }
                 }
