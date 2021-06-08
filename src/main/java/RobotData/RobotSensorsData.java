@@ -14,7 +14,7 @@ public class RobotSensorsData implements Cloneable {
 
     private final Logger logger = Logger.getLogger("Robot Sensor Data");
     //    board name -> board index -> ports -> values
-    private Map<String, Map<String, Map<String, Double>>> portsMap = new HashMap<>();
+    Map<String, Map<String, Map<String, Double>>> portsMap = new HashMap<>();
     //    board name -> board index -> board nickname
     final Map<String, Map<String, String>> boardNicknamesMap = new HashMap<>();
     //    board name -> board index -> board ports -> board nicknames
@@ -152,8 +152,8 @@ public class RobotSensorsData implements Cloneable {
                     }
                 } else if (realFirstValue instanceof LinkedTreeMap){
                     @SuppressWarnings("unchecked")
-                    Map<String, Map<String, String>> valueMapped = (Map<String, Map<String, String>>) value; // Map of boards to ports list
-                    for (Map.Entry<String, Map<String, String>> intAndMap : valueMapped.entrySet()) {
+                    Map<String, Map<String, Object>> valueMapped = (Map<String, Map<String, Object>>) value; // Map of boards to ports list
+                    for (Map.Entry<String, Map<String, Object>> intAndMap : valueMapped.entrySet()) {
 
                         String boardIndex = boardNicknamesMap
                                 .get(boardType)
@@ -161,7 +161,7 @@ public class RobotSensorsData implements Cloneable {
                                 getKeyByValue(boardNicknamesMap.get(boardType), fixName(intAndMap.getKey()))
                                 : fixName(intAndMap.getKey());
 
-                        Map<String, String> newPortMap = new HashMap<>();
+                        Map<String, Object> newPortMap = new HashMap<>();
                         Map<String, String> portsNicksMap = portNicknamesMap.get(boardType).get(boardIndex);
                         intAndMap.getValue().forEach((port, data) -> newPortMap.put(
                                 portsNicksMap.containsValue(port) ?
