@@ -14,28 +14,22 @@ import static org.junit.Assert.*;
 
 public class RobotSensorsDataTest {
 
-    private RobotSensorsData robotSensorsData = new RobotSensorsData();
-    //  private Map<String, Map<String, Map<String, Double>>> mapToCompare = new HashMap<>();
-    private Map<String, Double> grovePiInsideMap = new HashMap<>();
-    private Map<String, Map<String, Double>> grovePiMap = new HashMap<>();
-    private Map<String, Double> ev3InsideMap1 = new HashMap<>();
-    private Map<String, Map<String, Double>> ev3Map = new HashMap<>();
-    private Map<String, Double> ev3InsideMap2 = new HashMap<>();
+    private RobotSensorsData robotSensorsData;
 
 
     @Before
     public void setUp() {
-        String dataForBoardsMap = "{\"EV3\": {\"1\": [\"B\"],\"4\": [\"3\", \"A\"]},\"GrovePi\": [\"D3\"]}";
-        robotSensorsData.addToBoardsMap(dataForBoardsMap);
+        // String dataForBoardsMap = "{\"EV3\": {\"1\": [\"B\"],\"4\": [\"3\", \"A\"]},\"GrovePi\": [\"D3\"]}";
+        // robotSensorsData.addToBoardsMap(dataForBoardsMap);
     }
 
     @After
     public void tearDown() {
-        robotSensorsData.clear();
     }
 
     @Test
     public void deepCopyTest() {
+        robotSensorsData = new RobotSensorsData();
         // check both robotSensorData has the same portsMap after deepCopy
         Map<String, Map<String, Map<String, Double>>> expected = robotSensorsData.getPortsMap();
         RobotSensorsData newRobot = robotSensorsData.deepCopy();
@@ -47,19 +41,71 @@ public class RobotSensorsDataTest {
 
     @Test
     public void updateBoardMapValuesTest() {
-        // value is null before we update
-        assertNull(robotSensorsData.getPortsAndValues("GrovePi", "_1").get("D3"));
-        assertNull(robotSensorsData.getPortsAndValues("EV3", "_1").get("B"));
-        String dataForUpdate = "{\"EV3\": {\"_1\": {\"B\" : 10}},\"GrovePi\": {\"_1\": {\"D3\" : 52}}}";
+        robotSensorsData = new RobotSensorsData();
+
+        String dataWithNicknames = "{\n" +
+                "                \"EV3\":\n" +
+                "                    [{\n" +
+                "                        \"Name\": \"EV3_1\",\n" +
+                "                        \"Port\": \"rfcomm0\",\n" +
+                "                        \"2\": {\"Name\": \"UV3\"}" +
+                "                    }," +
+                "                   {\n" +
+                "                        \"Port\": \"rfcomm1\",\n" +
+                "                        \"3\": {\"Name\": \"UV_22\"}\n" +
+                "                    }]\n" +
+                "                ,\n" +
+                "                \"GrovePi\":\n" +
+                "                    [{\n" +
+                "                        \"Name\": \"myGrovePi\",\n" +
+                "                        \"A2\": \"\",\n" +
+                "                        \"D2\": {\"Name\": \"MyLed\", \"Device\": \"Led\"},\n" +
+                "                        \"D4\": {\"Name\": \"UV\", \"Device\": \"Ultrasonic\"},\n" +
+                "                        \"D8\": \"Led\"\n" +
+                "                    }," +
+                "                      {\n" +
+                "                        \"A2\": {\"Name\": \"UV234\", \"Device\": \"Ultrasonic\"},\n" +
+                "                        \"D2\": {\"Name\": \"MyLed\", \"Device\": \"Led\"},\n" +
+                "                        \"D8\": {\"Name\": \"Led2\", \"Device\": \"Led\"}\n" +
+                "                    }]\n" +
+                "            }";
+
+        robotSensorsData.buildNicknameMaps(dataWithNicknames);
+        String dataToAdd = "{\"EV3\": {\"EV3_1\": [\"UV3\",\"5\" ],\"_2\" : [\"UV_22\", \"4\"]},\"GrovePi\": {\"myGrovePi\": [\"MyLed\", \"Led2\"], \"_2\": [\"UV234\"]}}";
+
+        robotSensorsData.addToBoardsMap(dataToAdd);
+        // values are null before we update
+        assertNull(robotSensorsData.getPortsAndValues("EV3", "_1").get("_5"));
+        assertNull(robotSensorsData.getPortsAndValues("EV3", "EV3_1").get("_5"));
+
+        assertNull(robotSensorsData.getPortsAndValues("EV3", "_2").get("UV_22"));
+        assertNull(robotSensorsData.getPortsAndValues("EV3", "_2").get("_3"));
+
+        assertNull(robotSensorsData.getPortsAndValues("GrovePi", "_2").get("MyLed"));
+        assertNull(robotSensorsData.getPortsAndValues("GrovePi", "_2").get("D2"));
+        assertNull(robotSensorsData.getPortsAndValues("GrovePi", "myGrovePi").get("MyLed"));
+        assertNull(robotSensorsData.getPortsAndValues("GrovePi", "myGrovePi").get("D2"));
+
+        String dataForUpdate = "{\"EV3\": {\"EV3_1\": {\"_5\" : 10}, \"_2\" : {\"UV_22\" : 122}}, \"GrovePi\": {\"myGrovePi\": {\"MyLed\" : 57}}}";
         robotSensorsData.updateBoardMapValues(dataForUpdate);
         // has value after update
-        assertEquals((Double) 52.0, robotSensorsData.getPortsAndValues("GrovePi", "_1").get("D3"));
-        assertEquals((Double) 10.0, robotSensorsData.getPortsAndValues("EV3", "_1").get("B"));
+        assertEquals((Double) 10.0,robotSensorsData.getPortsAndValues("EV3", "_1").get("_5"));
+        assertEquals((Double) 10.0,robotSensorsData.getPortsAndValues("EV3", "EV3_1").get("_5"));
+
+        assertEquals((Double) 122.0,robotSensorsData.getPortsAndValues("EV3", "_2").get("UV_22"));
+        //assertEquals((Double) 122.0,robotSensorsData.getPortsAndValues("EV3", "_2").get("_3"));
+
+        assertEquals((Double) 57.0,robotSensorsData.getPortsAndValues("GrovePi", "_2").get("MyLed"));
+        assertEquals((Double) 57.0,robotSensorsData.getPortsAndValues("GrovePi", "_2").get("D2"));
+        assertEquals((Double) 57.0,robotSensorsData.getPortsAndValues("GrovePi", "myGrovePi").get("MyLed"));
+        assertEquals((Double) 57.0,robotSensorsData.getPortsAndValues("GrovePi", "myGrovePi").get("D2"));
     }
 
 
     @Test
     public void buildNicknameMaps() {
+        robotSensorsData = new RobotSensorsData();
+
         String dataWithNicknames = "{\n" +
                 "                \"EV3\":\n" +
                 "                    [{\n" +
@@ -115,115 +161,343 @@ public class RobotSensorsDataTest {
 
 
     @Test
-    public void addToBoardsMapTest() {
-        // doesn't exist before
-        Set<String> ports = robotSensorsData.getPorts("EV3", "_1");
-        assertFalse(ports.contains("C"));
-        ports = robotSensorsData.getPorts("GrovePi", "_1");
-        assertFalse(ports.contains("D1"));
-        String dataToAdd = "{\"EV3\": {\"_1\": [\"C\"]},\"GrovePi\": {\"_1\": [\"D1\"]}}";
+    public void addToBoardsMapNicknamesTest() {
+        robotSensorsData = new RobotSensorsData();
+
+        String dataWithNicknames = "{\n" +
+                "                \"EV3\":\n" +
+                "                    [{\n" +
+                "                        \"Name\": \"EV3_1\",\n" +
+                "                        \"Port\": \"rfcomm0\",\n" +
+                "                        \"2\": {\"Name\": \"UV3\"}\n" +
+                "                    }," +
+                "                   {\n" +
+                "                        \"Port\": \"rfcomm1\",\n" +
+                "                        \"3\": {\"Name\": \"UV_22\"}\n" +
+                "                    }, " +
+                "                        {\"Port\": \"rfcomm2\"\n" +
+                "                       }]\n" +
+                "                ,\n" +
+                "                \"GrovePi\":\n" +
+                "                    [{\n" +
+                "                        \"Name\": \"myGrovePi\",\n" +
+                "                        \"A2\": \"\",\n" +
+                "                        \"D2\": {\"Name\": \"MyLed\", \"Device\": \"Led\"},\n" +
+                "                        \"D4\": {\"Name\": \"UV\", \"Device\": \"Ultrasonic\"},\n" +
+                "                        \"D8\": \"Led\"\n" +
+                "                    }," +
+                "                      {\n" +
+                "                        \"A2\": {\"Name\": \"UV234\", \"Device\": \"Ultrasonic\"},\n" +
+                "                        \"D2\": {\"Name\": \"MyLed\", \"Device\": \"Led\"},\n" +
+                "                        \"D8\": \"Led\"\n" +
+                "                    }]\n" +
+                "            }";
+
+        robotSensorsData.buildNicknameMaps(dataWithNicknames);
+
+        String dataToAdd = "{\"EV3\": {\"EV3_1\": [\"A\"],\"_2\" : [\"B\"], \"_3\": [\"4\"]},\"GrovePi\": {\"myGrovePi\": [\"D1\"], \"_2\": [\"D1\"]}}";
+
         robotSensorsData.addToBoardsMap(dataToAdd);
-        // exist after we add it
+
+        // exist after we added it
+        Set<String> ports = robotSensorsData.getPorts("EV3", "EV3_1");
+        assertTrue(ports.contains("A"));
+
         ports = robotSensorsData.getPorts("EV3", "_1");
-        assertTrue(ports.contains("C"));
+        assertTrue(ports.contains("A"));
+
+        ports = robotSensorsData.getPorts("EV3", "_2");
+        assertTrue(ports.contains("B"));
+
+        ports = robotSensorsData.getPorts("EV3", "_3");
+        assertTrue(ports.contains("_4"));
+
         ports = robotSensorsData.getPorts("GrovePi", "_1");
+        assertTrue(ports.contains("D1"));
+
+        ports = robotSensorsData.getPorts("GrovePi", "myGrovePi");
+        assertTrue(ports.contains("D1"));
+
+        ports = robotSensorsData.getPorts("GrovePi", "_2");
         assertTrue(ports.contains("D1"));
     }
 
     @Test
-    public void addToBoardsMapNicknamesTest() {
-        String dataWithNicknames = "{\"EV3\": {\"ev3_1\": [\"B\"],\"4\": [\"3\", \"A\"]},\"GrovePi\": { \"myGrovePi\": [\"D3\"]}}";
-        robotSensorsData.addToBoardsMap(dataWithNicknames);
-        // doesn't exist before
-        Set<String> ports = robotSensorsData.getPorts("EV3", "ev3_1");
-        assertFalse(ports.contains("D"));
-        ports = robotSensorsData.getPorts("GrovePi", "myGrovePi");
-        assertFalse(ports.contains("A2"));
-        String dataToAdd = "{\"EV3\": {\"ev3_1\": [\"D\"]},\"GrovePi\": {\"myGrovePi\": [\"A2\"]}}";
-        robotSensorsData.addToBoardsMap(dataToAdd);
-        // exist after we add it
-        ports = robotSensorsData.getPorts("EV3", "ev3_1");
-        assertTrue(ports.contains("D"));
-        ports = robotSensorsData.getPorts("GrovePi", "myGrovePi");
-        assertTrue(ports.contains("A2"));
-    }
+    public void removeFromBoardsMapWithNicknamesTest() {
+        robotSensorsData = new RobotSensorsData();
 
-    @Test
-    public void removeFromBoardsMapTest() {
-        // exist in portsMap before remove
-        assertTrue(robotSensorsData.getPortsAndValues("GrovePi", "_1").containsKey("D3"));
-        String dataToRemove = "{\"GrovePi\": [\"D3\"]}";
+        String dataWithNicknames = "{\n" +
+                "                \"EV3\":\n" +
+                "                    [{\n" +
+                "                        \"Name\": \"EV3_1\",\n" +
+                "                        \"Port\": \"rfcomm0\",\n" +
+                "                        \"2\": {\"Name\": \"UV3\"}" +
+                "                    }," +
+                "                   {\n" +
+                "                        \"Port\": \"rfcomm1\",\n" +
+                "                        \"3\": {\"Name\": \"UV_22\"}\n" +
+                "                    }]\n" +
+                "                ,\n" +
+                "                \"GrovePi\":\n" +
+                "                    [{\n" +
+                "                        \"Name\": \"myGrovePi\",\n" +
+                "                        \"A2\": \"\",\n" +
+                "                        \"D2\": {\"Name\": \"MyLed\", \"Device\": \"Led\"},\n" +
+                "                        \"D4\": {\"Name\": \"UV\", \"Device\": \"Ultrasonic\"},\n" +
+                "                        \"D8\": \"Led\"\n" +
+                "                    }," +
+                "                      {\n" +
+                "                        \"A2\": {\"Name\": \"UV234\", \"Device\": \"Ultrasonic\"},\n" +
+                "                        \"D2\": {\"Name\": \"MyLed\", \"Device\": \"Led\"},\n" +
+                "                        \"D8\": {\"Name\": \"Led2\", \"Device\": \"Led\"}\n" +
+                "                    }]\n" +
+                "            }";
+
+        robotSensorsData.buildNicknameMaps(dataWithNicknames);
+        String dataToAdd = "{\"EV3\": {\"EV3_1\": [\"UV3\",\"5\" ],\"_2\" : [\"UV_22\", \"4\"]},\"GrovePi\": {\"myGrovePi\": [\"MyLed\", \"Led2\"], \"_2\": [\"UV234\"]}}";
+
+        robotSensorsData.addToBoardsMap(dataToAdd);
+
+        String dataToRemove = "{\"EV3\": {\"EV3_1\": [\"UV3\"],\"_2\" : [\"UV_22\"]},\"GrovePi\": {\"myGrovePi\": [\"MyLed\"], \"_2\": [\"UV234\"]}}";
+
+
         robotSensorsData.removeFromBoardsMap(dataToRemove);
-        // doesn't exist after remove
-        assertFalse(robotSensorsData.getPortsAndValues("GrovePi", "_1").containsKey("D3"));
+
+        // exist after we added it
+        Set<String> ports = robotSensorsData.getPorts("EV3", "EV3_1");
+        assertFalse(ports.contains("UV3"));
+
+        ports = robotSensorsData.getPorts("EV3", "EV3_1");
+        assertFalse(ports.contains("_2"));
+
+        ports = robotSensorsData.getPorts("EV3", "_1");
+        assertFalse(ports.contains("UV3"));
+
+        ports = robotSensorsData.getPorts("EV3", "_1");
+        assertFalse(ports.contains("_2"));
+
+        ports = robotSensorsData.getPorts("EV3", "_2");
+        assertFalse(ports.contains("UV_22"));
+
+        ports = robotSensorsData.getPorts("EV3", "_2");
+        assertFalse(ports.contains("_3"));
+
+        ports = robotSensorsData.getPorts("GrovePi", "_1");
+        assertFalse(ports.contains("D2"));
+
+        ports = robotSensorsData.getPorts("GrovePi", "_1");
+        assertFalse(ports.contains("MyLed"));
+
+        ports = robotSensorsData.getPorts("GrovePi", "myGrovePi");
+        assertFalse(ports.contains("D2"));
+
+        ports = robotSensorsData.getPorts("GrovePi", "myGrovePi");
+        assertFalse(ports.contains("MyLed"));
+
+        ports = robotSensorsData.getPorts("GrovePi", "myGrovePi");
+        assertFalse(ports.contains("D1"));
+
+        ports = robotSensorsData.getPorts("GrovePi", "_2");
+        assertTrue(ports.isEmpty());
+
+        //check rest of the sensors were not removed
+        ports = robotSensorsData.getPorts("EV3", "EV3_1");
+        assertTrue(ports.contains("_5"));
+
+        ports = robotSensorsData.getPorts("EV3", "_1");
+        assertTrue(ports.contains("_5"));
+
+        ports = robotSensorsData.getPorts("EV3", "_2");
+        assertTrue(ports.contains("_4"));
+
+        ports = robotSensorsData.getPorts("GrovePi", "myGrovePi");
+        assertTrue(ports.contains("Led2"));
     }
 
     @Test
     public void getBoardNamesTest() {
+        robotSensorsData = new RobotSensorsData();
+        String dataWithNicknames = "{\n" +
+                "                \"EV3\":\n" +
+                "                    [{\n" +
+                "                        \"Name\": \"EV3_1\",\n" +
+                "                        \"Port\": \"rfcomm0\",\n" +
+                "                        \"2\": {\"Name\": \"UV3\"}\n" +
+                "                    }]\n" +
+                "                ,\n" +
+                "                \"GrovePi\":\n" +
+                "                    [{\n" +
+                "                        \"Name\": \"myGrovePi\",\n" +
+                "                        \"A2\": \"\",\n" +
+                "                        \"D2\": {\"Name\": \"MyLed\", \"Device\": \"Led\"},\n" +
+                "                        \"D4\": {\"Name\": \"UV\", \"Device\": \"Ultrasonic\"},\n" +
+                "                        \"D8\": \"Led\"\n" +
+                "                    }]\n" +
+                "            }";
+
+
+        robotSensorsData.buildNicknameMaps(dataWithNicknames);
+        String dataToAdd = "{\"EV3\": {\"EV3_1\": [\"A\"]},\"GrovePi\": {\"myGrovePi\": [\"D1\"]}}";
+        robotSensorsData.addToBoardsMap(dataToAdd);
         assertArrayEquals(new String[]{"EV3", "GrovePi"}, robotSensorsData.getBoardNames().toArray());
     }
 
     @Test
     public void getBoardByNameAndIndexTest() {
+        robotSensorsData = new RobotSensorsData();
+        robotSensorsData.portsMap = Map.of(
+                "EV3", Map.of(
+                        "_1", Map.of(
+                                "A", 50.0,
+                                "NickA", 50.0,
+                                "B", 60.0
+                        ),
+                        "Nick1", Map.of(
+                                "A", 50.0,
+                                "NickA", 50.0,
+                                "B", 60.0
+                        )
+                ),
+                "GrovePi", Map.of(
+                        "_2", Map.of(
+                                "D2", 50.0,
+                                "D4", 60.0
+                        )
+                )
+        );
+
         Map<String, Double> expected = new HashMap<>();
-        expected.put("B", null);
+        expected.put("A", 50.0);
+        expected.put("NickA", 50.0);
+        expected.put("B", 60.0);
+
         assertEquals(expected, robotSensorsData.getBoardByNameAndIndex("EV3", "_1"));
+        assertEquals(expected, robotSensorsData.getBoardByNameAndIndex("EV3", "Nick1"));
 
         expected = new HashMap<>();
-        expected.put("_3", null);
-        expected.put("A", null);
-        assertEquals(expected, robotSensorsData.getBoardByNameAndIndex("EV3", "_4"));
-
-        expected = new HashMap<>();
-        expected.put("D3", null);
-        assertEquals(expected, robotSensorsData.getBoardByNameAndIndex("GrovePi", "_1"));
+        expected.put("D2", 50.0);
+        expected.put("D4", 60.0);
+        assertEquals(expected, robotSensorsData.getBoardByNameAndIndex("GrovePi", "_2"));
     }
 
     @Test
     public void getBoardIndexesTest() {
+        robotSensorsData = new RobotSensorsData();
+
+        robotSensorsData.portsMap = Map.of(
+                "EV3", Map.of(
+                        "_1", Map.of(
+                                "A", 50.0,
+                                "NickA", 50.0,
+                                "B", 60.0
+                        ),
+                        "Nick1", Map.of(
+                                "A", 50.0,
+                                "NickA", 50.0,
+                                "B", 60.0
+                        )
+                ),
+                "GrovePi", Map.of(
+                        "_2", Map.of(
+                                "D2", 50.0,
+                                "D4", 60.0
+                        )
+                )
+        );
+
+
         Set<String> actual = robotSensorsData.getBoardIndexes("EV3");
         Set<String> expected = new HashSet<>();
+        expected.add("Nick1");
         expected.add("_1");
-        expected.add("_4");
         assertEquals(expected, actual);
 
         actual = robotSensorsData.getBoardIndexes("GrovePi");
         expected = new HashSet<>();
-        expected.add("_1");
+        expected.add("_2");
         assertEquals(expected, actual);
     }
 
     @Test
     public void getPortsAndValuesTest() {
+        robotSensorsData = new RobotSensorsData();
+
+        robotSensorsData.portsMap = Map.of(
+                "EV3", Map.of(
+                        "_1", Map.of(
+                                "A", 50.0,
+                                "NickA", 50.0,
+                                "B", 60.0
+                        ),
+                        "Nick1", Map.of(
+                                "A", 50.0,
+                                "NickA", 50.0,
+                                "B", 60.0
+                        )
+                ),
+                "GrovePi", Map.of(
+                        "_2", Map.of(
+                                "D2", 12.6,
+                                "D4", 177.0
+                        )
+                )
+        );
+
         Map<String, Double> actual = robotSensorsData.getPortsAndValues("EV3", "_1");
         Map<String, Double> expected = new HashMap<>();
-        expected.put("B", null);
+        expected.put("A", 50.0);
+        expected.put("NickA", 50.0);
+        expected.put("B", 60.0);
         assertEquals(expected, actual);
 
-        actual = robotSensorsData.getPortsAndValues("EV3", "_4");
+
+        actual = robotSensorsData.getPortsAndValues("EV3", "Nick1");
         expected = new HashMap<>();
-        expected.put("_3", null);
-        expected.put("A", null);
+        expected.put("A", 50.0);
+        expected.put("NickA", 50.0);
+        expected.put("B", 60.0);
         assertEquals(expected, actual);
 
-        actual = robotSensorsData.getPortsAndValues("GrovePi", "_1");
+        actual = robotSensorsData.getPortsAndValues("GrovePi", "_2");
         expected = new HashMap<>();
-        expected.put("D3", null);
+        expected.put("D2", 12.6);
+        expected.put("D4", 177.0);
         assertEquals(expected, actual);
     }
 
     @Test
     public void getPortsTest() {
-        assertArrayEquals(new String[]{"B"}, robotSensorsData.getPorts("EV3", "_1").toArray());
-        assertArrayEquals(new String[]{"A", "_3"}, robotSensorsData.getPorts("EV3", "_4").toArray());
-        assertArrayEquals(new String[]{"D3"}, robotSensorsData.getPorts("GrovePi", "_1").toArray());
-    }
+        robotSensorsData = new RobotSensorsData();
+        robotSensorsData.portsMap = Map.of(
+                "EV3", Map.of(
+                        "_1", Map.of(
+                                "A", 50.0,
+                                "NickA", 50.0,
+                                "B", 60.0
+                        ),
+                        "Nick1", Map.of(
+                                "A", 50.0,
+                                "NickA", 50.0,
+                                "B", 60.0
+                        )
+                ),
+                "GrovePi", Map.of(
+                        "_2", Map.of(
+                                "D2", 12.6,
+                                "D4", 177.0
+                        )
+                )
+        );
+        Set<String> expected = new HashSet<>();
+        expected.add("A");
+        expected.add("NickA");
+        expected.add("B");
+        assertEquals(expected, robotSensorsData.getPorts("EV3", "_1"));
+        assertEquals(expected, robotSensorsData.getPorts("EV3", "Nick1"));
 
-    @Test
-    public void clearTest() {
-        assertNotNull(robotSensorsData.getPortsMap());
-        robotSensorsData.clear();
-        assertTrue(robotSensorsData.getPortsMap().isEmpty());
+        expected = new HashSet<>();
+        expected.add("D2");
+        expected.add("D4");
+        assertEquals(expected, robotSensorsData.getPorts("GrovePi", "_2"));
     }
-
 }
