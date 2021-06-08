@@ -454,10 +454,11 @@ public class RobotSensorsData implements Cloneable {
                 Integer.parseInt(nickName.substring(1));
             }
         } catch (NumberFormatException nfe) {
-            String errorMessage = String.format("Board cannot be named like an index - %s", nickName);
-            logger.log(Level.SEVERE, errorMessage);
-            throw new IllegalArgumentException(errorMessage);
+            return;
         }
+        String errorMessage = String.format("Board cannot be named like an index - %s", nickName);
+        logger.log(Level.SEVERE, errorMessage);
+        throw new IllegalArgumentException(errorMessage);
     }
 
 }
