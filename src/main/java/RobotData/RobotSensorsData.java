@@ -87,6 +87,10 @@ public class RobotSensorsData implements Cloneable {
                                 logger.log(Level.SEVERE, "Port cannot be named speed");
                                 throw new IllegalArgumentException("Port cannot be named speed");
                             }
+                            if (nickName.equals("_")){
+                                logger.log(Level.SEVERE, "Port cannot be named '_'");
+                                throw new IllegalArgumentException("Port cannot be named '_'");
+                            }
                             portsNicknames.put(ports.getKey(), nickName);
                         }
                     }
@@ -203,26 +207,38 @@ public class RobotSensorsData implements Cloneable {
                         for (Map.Entry<String, Double> portAndValue : boardIndex.getValue().entrySet()) {
                             setPortValue(boardName, boardIndex.getKey(), portAndValue.getKey(), portAndValue.getValue());
                             if (portNicknamesMap.containsKey(boardName)
-                                    && portNicknamesMap.get(boardName).containsKey(boardIndex.getKey())
-                                    && portNicknamesMap.get(boardName).get(boardIndex.getKey()).containsKey(portAndValue.getKey())) {
-                                String nickname = portNicknamesMap.get(boardName).get(boardIndex.getKey()).get(portAndValue.getKey());
-                                setPortValue(boardName, boardIndex.getKey(), nickname, portAndValue.getValue());
+                                    && portNicknamesMap.get(boardName).containsKey(boardIndex.getKey().substring(1))) {
+                                Map<String, String> portsToNicks = portNicknamesMap.get(boardName).get(boardIndex.getKey().substring(1));
+                                if (portsToNicks.containsKey(portAndValue.getKey())) {
+                                    String nickname = portNicknamesMap.get(boardName).get(boardIndex.getKey().substring(1)).get(portAndValue.getKey());
+                                    setPortValue(boardName, boardIndex.getKey(), nickname, portAndValue.getValue());
+                                }
+                                else if ((portAndValue.getKey().charAt(0) == '_' && Character.isDigit(portAndValue.getKey().charAt(1)) && portsToNicks.containsKey(portAndValue.getKey().substring(1)))){
+                                    String nickname = portNicknamesMap.get(boardName).get(boardIndex.getKey().substring(1)).get(portAndValue.getKey().substring(1));
+                                    setPortValue(boardName, boardIndex.getKey(), nickname, portAndValue.getValue());
+                                }
                             }
                             updated = true;
                         }
                     }
                     if (boardNicknamesMap.containsKey(boardName)
-                            && boardNicknamesMap.get(boardName).containsKey(boardIndex.getKey())) {
-                        String indexNickname = boardNicknamesMap.get(boardName).get(boardIndex.getKey());
+                            && boardNicknamesMap.get(boardName).containsKey(boardIndex.getKey().substring(1))) {
+                        String indexNickname = boardNicknamesMap.get(boardName).get(boardIndex.getKey().substring(1));
 
                         if (portsMap.get(boardName).containsKey(indexNickname)) {
                             for (Map.Entry<String, Double> portAndValue : boardIndex.getValue().entrySet()) {
                                 setPortValue(boardName, indexNickname, portAndValue.getKey(), portAndValue.getValue());
                                 if (portNicknamesMap.containsKey(boardName)
-                                        && portNicknamesMap.get(boardName).containsKey(boardIndex.getKey())
-                                        && portNicknamesMap.get(boardName).get(boardIndex.getKey()).containsKey(portAndValue.getKey())) {
-                                    String nickname = portNicknamesMap.get(boardName).get(boardIndex.getKey()).get(portAndValue.getKey());
-                                    setPortValue(boardName, indexNickname, nickname, portAndValue.getValue());
+                                        && portNicknamesMap.get(boardName).containsKey(boardIndex.getKey().substring(1))) {
+                                    Map<String, String> portsToNicks = portNicknamesMap.get(boardName).get(boardIndex.getKey().substring(1));
+                                    if (portsToNicks.containsKey(portAndValue.getKey())) {
+                                        String nickname = portNicknamesMap.get(boardName).get(boardIndex.getKey().substring(1)).get(portAndValue.getKey());
+                                        setPortValue(boardName, indexNickname, nickname, portAndValue.getValue());
+                                    }
+                                    else if ((portAndValue.getKey().charAt(0) == '_' && Character.isDigit(portAndValue.getKey().charAt(1)) && portsToNicks.containsKey(portAndValue.getKey().substring(1)))){
+                                        String nickname = portNicknamesMap.get(boardName).get(boardIndex.getKey().substring(1)).get(portAndValue.getKey().substring(1));
+                                        setPortValue(boardName, indexNickname, nickname, portAndValue.getValue());
+                                    }
                                 }
                                 updated = true;
                             }
@@ -311,7 +327,7 @@ public class RobotSensorsData implements Cloneable {
                         }
                     }
                 });
-                data.get(key).put("1", portMap); // Index of the first board of this type is 1
+                data.get(key).put("_1", portMap); // Index of the first board of this type is 1
                 if (boardNicknamesMap.containsKey((String) key)) {
                     if (boardNicknamesMap.get((String) key).containsKey("1")) {
                         data.get(key).putIfAbsent(boardNicknamesMap.get((String) key).get("1"), portMap); // Index of the first board of this type is 1
